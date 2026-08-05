@@ -1,0 +1,1837 @@
+<!-- Google Apps Script Enterprise Client Router & Renderers -->
+<script>
+  // Global client-side persistent state
+  let appState = {
+    currentView: 'home',
+    theme: 'light',
+    companyInfo: {},
+    products: [],
+    projects: [],
+    gallery: [],
+    team: [],
+    blog: [],
+    translations: [],
+    currentLang: 'en',
+    adminData: {
+      inquiries: [],
+      productsCount: 0,
+      projectsCount: 0
+    },
+    activeAdminTab: 'messages',
+    selectedProduct: null,
+    selectedProject: null,
+    selectedBlog: null,
+    servicesFilter: 'All',
+    productsFilter: 'All',
+    projectsFilter: 'All'
+  };
+
+  // Client-side translations map
+  let translationsMap = {};
+
+  // Translation helper function
+  function t(key, defaultVal) {
+    const lang = appState.currentLang || 'en';
+    if (translationsMap[key] && translationsMap[key][lang]) {
+      return translationsMap[key][lang];
+    }
+    if (translationsMap[key] && translationsMap[key]['en']) {
+      return translationsMap[key]['en'];
+    }
+    return defaultVal !== undefined ? defaultVal : key;
+  }
+
+  // Toggle Language Dropdown UI
+  function toggleLangDropdown() {
+    const dropdown = document.getElementById('lang-dropdown');
+    if (dropdown) {
+      if (dropdown.classList.contains('hidden')) {
+        dropdown.classList.remove('hidden');
+      } else {
+        dropdown.classList.add('hidden');
+      }
+    }
+  }
+
+  // Change Language and update elements
+  function changeLanguage(lang) {
+    appState.currentLang = lang;
+    localStorage.setItem('sdy_selected_language', lang);
+    
+    const currentLangText = document.getElementById('current-lang-text');
+    if (currentLangText) {
+      currentLangText.textContent = lang.toUpperCase();
+    }
+    
+    const dropdown = document.getElementById('lang-dropdown');
+    if (dropdown) {
+      dropdown.classList.add('hidden');
+    }
+    
+    // Update elements
+    updateStaticTranslations();
+    
+    // Re-render sections that contain dynamic content
+    renderServices();
+    renderProducts();
+    renderProjects();
+    renderBlog();
+  }
+
+  function updateStaticTranslations() {
+    // Nav Items (Header)
+    updateElementText('nav-home', t('nav.home', 'Home'));
+    updateElementText('nav-services', t('nav.services', 'Services'));
+    updateElementText('nav-products', t('nav.products', 'Products'));
+    updateElementText('nav-projects', t('nav.projects', 'Projects'));
+    updateElementText('nav-about', t('nav.about', 'About Us'));
+    updateElementText('nav-blog', t('nav.blog', 'Blog'));
+    updateElementText('nav-contact', t('nav.contact', 'Contact'));
+    
+    // Mobile Nav Items
+    updateElementText('mobile-nav-home', t('nav.home', 'Home'));
+    updateElementText('mobile-nav-services', t('nav.services', 'Services'));
+    updateElementText('mobile-nav-products', t('nav.products', 'Products'));
+    updateElementText('mobile-nav-projects', t('nav.projects', 'Projects'));
+    updateElementText('mobile-nav-about', t('nav.about', 'About Us'));
+    updateElementText('mobile-nav-blog', t('nav.blog', 'Blog'));
+    updateElementText('mobile-nav-contact', t('nav.contact', 'Contact'));
+
+    // Hero Section
+    updateElementText('hero-badge', t('home.premium_tag', 'Premium Construction & Joinery'));
+    updateElementText('hero-title', t('home.hero_title', 'High Precision Joinery & Steel Solutions in Cambodia'));
+    updateElementText('hero-desc', t('home.hero_desc', 'Operating specialized heavy wood factories and pre-engineered steel mills directly in Phnom Penh to secure turn-key compliance, zero-middleman cost, and pristine luxury fit-outs.'));
+    updateElementText('hero-btn-products', t('home.explore_btn', 'Explore Products'));
+    updateElementText('hero-btn-contact', t('home.inquire_btn', 'Inquire Project'));
+    
+    // Intro Section
+    updateElementText('intro-badge', t('intro.tag', 'Corporate Profile'));
+    updateElementText('intro-title', t('intro.title', 'Integrated Engineering & Bespoke Interior Contracting'));
+    
+    // Dynamic intro description
+    const introDescEl = document.getElementById('intro-desc');
+    if (introDescEl) {
+      const info = appState.companyInfo || {};
+      const companyName = info.CompanyName || "SDY Company C&I";
+      const descT = t('intro.desc', "At SDY Company C&I, we have unified Cambodia's premium interior design fit-out division with our massive high-precision manufacturing mill. Based in Phnom Penh, we build turn-key commercial renovations, high-durability pre-engineered metal plants, and double-glazed curtain facades under rigorous international quality controls.");
+      const formatted = descT.replace("SDY Company C&I", `<span class="font-bold text-primary dark:text-accent" id="intro-company-name">${companyName}</span>`)
+                             .replace("SDY C&I", `<span class="font-bold text-primary dark:text-accent" id="intro-company-name">${companyName}</span>`);
+      introDescEl.innerHTML = formatted;
+    }
+    
+    // Merits
+    updateElementText('merit-1-title', t('intro.local_fab', 'Local Fabrication Control'));
+    updateElementText('merit-1-desc', t('intro.local_fab_desc', '25,000 sqm heavy factory guarantees cost-savings and material traceability.'));
+    updateElementText('merit-2-title', t('intro.compliance', 'Compliance Standard Certified'));
+    updateElementText('merit-2-desc', t('intro.compliance_desc', 'Tested fire stop mechanisms certified up to 120-mins (UL fire code).'));
+    updateElementText('intro-btn-history', t('intro.history_btn', 'Learn Our History &rarr;'));
+    
+    // Process Section
+    updateElementText('process-badge', t('process.tag', 'Our Process'));
+    updateElementText('process-title', t('process.title', 'Seamless Corporate Execution Lifecycle'));
+    
+    updateElementText('process-step-1-title', t('process.step_1_title', 'Consultation & Design'));
+    updateElementText('process-step-1-desc', t('process.step_1_desc', 'Deep structural analysis, architectural concept design, and engineering optimization to finalize materials.'));
+    updateElementText('process-step-2-title', t('process.step_2_title', 'Factory Fabrication'));
+    updateElementText('process-step-2-desc', t('process.step_2_desc', 'High-precision manufacturing in our 25,000 sqm facility using CNC German tooling and lumber seasoning kilns.'));
+    updateElementText('process-step-3-title', t('process.step_3_title', 'Precision Installation'));
+    updateElementText('process-step-3-desc', t('process.step_3_desc', 'Seamless deployment, steel erection, curtain wall facade fitting, and premium joinery installation by certified teams.'));
+    updateElementText('process-step-4-title', t('process.step_4_title', 'Certified Handover'));
+    updateElementText('process-step-4-desc', t('process.step_4_desc', 'Rigorous safety audits, soundproof decibel checks, UL fire compliance approvals, and polished handover.'));
+    
+    // Testimonials Section Title
+    updateElementText('testimonials-badge', t('testimonials.tag', 'Client Testimonials'));
+    updateElementText('testimonials-title', t('testimonials.title', 'What Our Partners Say About Our Compliance'));
+  }
+  
+  function updateElementText(id, val) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = val;
+    }
+  }
+
+  // Hardcoded premium static data (e.g. Services, Testimonials) to keep sheets lightweight
+  const STATIC_SERVICES = [
+    { id: 'srv_1', name: 'Interior Fit-Out', description: 'Turnkey interior architecture, acoustics layout, and modular partitions for offices, retail, and hospitality.', category: 'Design & Fit-Out', details: 'Full concept-to-handover commercial fit-out.' },
+    { id: 'srv_2', name: 'Bespoke Joinery', description: 'Precision luxury wood manufacturing of premium veneers, solid wooden paneling, and customized cabinets.', category: 'Doors & Manufacturing', details: 'Direct-from-factory kiln-seasoned lumber.' },
+    { id: 'srv_3', name: 'UL Fire Rated Doors', description: 'Rigorous safety assemblies tested up to 120-minute fire resistance, ideal for hotel entries and high-rises.', category: 'Doors & Manufacturing', details: 'Compliant with structural fire codes.' },
+    { id: 'srv_4', name: 'Pre-Engineered Steel Work', description: 'Heavy structural steel fabrication, architectural columns, factory framing, and robust metal structures.', category: 'Structural Steel', details: 'Engineered for highest regional wind loads.' },
+    { id: 'srv_5', name: 'Double-Glazed Facades', description: 'Argon-insulated structural curtain wall systems, high-durability thermal barriers, and aluminum profiles.', category: 'Glass & Facade', details: 'Cuts heat transmission by up to 65%.' },
+    { id: 'srv_6', name: 'Glass Balustrades', description: 'Laminated safety glass panels, minimal architectural rails, customized glass partitions, and fittings.', category: 'Glass & Facade', details: 'Heavy impact-resistant safety profiles.' }
+  ];
+
+  const STATIC_TESTIMONIALS = [
+    { id: 't_1', quote: "SDY's local 25,000 sqm factory made sourcing premium acoustic fire doors extremely seamless. Their compliance team provided full UL test sheets immediately.", author: "Heng Sokanha", title: "Project Manager, Chip Mong Landmark" },
+    { id: 't_2', quote: "The structural steel fabrication was precise, completed well within our timeline. True engineering excellence right here in Phnom Penh.", author: "David Vance", title: "Technical Director, Indochina Build" },
+    { id: 't_3', quote: "Our luxury showroom fit-out looks phenomenal. Their wood joinery matching and veneer quality rival standard European imports at a fraction of the cost.", author: "Oknha Rathana", title: "Owner, Vattanac Premium retail" }
+  ];
+
+  // Initialize application on load
+  window.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    loadServerData();
+    setupScrollMonitoring();
+
+    // Close language dropdown if clicked outside
+    window.addEventListener('click', (e) => {
+      const langBtn = document.getElementById('lang-btn-current');
+      const langDropdown = document.getElementById('lang-dropdown');
+      if (langDropdown && langBtn && !langBtn.contains(e.target) && !langDropdown.contains(e.target)) {
+        langDropdown.classList.add('hidden');
+      }
+    });
+  });
+
+  // Theme Initializer
+  function initTheme() {
+    const savedTheme = localStorage.getItem('sdy-corporate-theme') || 'light';
+    appState.theme = savedTheme;
+    applyTheme();
+  }
+
+  function toggleTheme() {
+    appState.theme = appState.theme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('sdy-corporate-theme', appState.theme);
+    applyTheme();
+  }
+
+  function applyTheme() {
+    const sunIcon = document.getElementById('theme-icon-sun');
+    const moonIcon = document.getElementById('theme-icon-moon');
+    
+    if (appState.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+      sunIcon.classList.remove('hidden');
+      moonIcon.classList.add('hidden');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+      sunIcon.classList.add('hidden');
+      moonIcon.classList.remove('hidden');
+    }
+  }
+
+  // Header Search Reveal Toggle
+  function toggleSearch() {
+    const searchInput = document.getElementById('header-search-bar');
+    if (searchInput.classList.contains('w-0')) {
+      searchInput.classList.remove('w-0', 'opacity-0');
+      searchInput.classList.add('w-48', 'opacity-100', 'px-4');
+      searchInput.focus();
+    } else {
+      searchInput.classList.add('w-0', 'opacity-0');
+      searchInput.classList.remove('w-48', 'opacity-100', 'px-4');
+    }
+  }
+
+  // Load database arrays via Google Apps Script RPC
+  function loadServerData() {
+    if (typeof google === 'undefined') {
+      console.warn("GAS Environment missing. Simulating fallback data.");
+      hideSplashLoader();
+      return;
+    }
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          appState.companyInfo = response.companyInfo;
+          appState.products = response.products;
+          appState.projects = response.projects;
+          appState.gallery = response.gallery;
+          appState.team = response.team;
+          appState.blog = response.blog;
+          appState.translations = response.translations || [];
+          
+          // Populate translations Map
+          if (Array.isArray(response.translations)) {
+            response.translations.forEach(row => {
+              const key = row.Key || row.key;
+              if (key) {
+                translationsMap[key] = {
+                  en: row.English || row.english || '',
+                  km: row.Khmer || row.khmer || '',
+                  ko: row.Korean || row.korean || ''
+                };
+              }
+            });
+          }
+          
+          // Load language setting
+          const savedLang = localStorage.getItem('sdy_selected_language') || 'en';
+          appState.currentLang = savedLang;
+          const currentLangText = document.getElementById('current-lang-text');
+          if (currentLangText) {
+            currentLangText.textContent = savedLang.toUpperCase();
+          }
+          
+          // Apply corporate dynamic settings to header/footer
+          applyCompanyProfileData();
+          
+          // Initial renders
+          renderHome();
+          renderServices();
+          renderProducts();
+          renderProjects();
+          renderAbout();
+          renderBlog();
+          
+          // Apply static translation keys
+          updateStaticTranslations();
+          
+          // Sync with Admin variables
+          loadAdminData();
+        } else {
+          showToast("Error synchronizing sheet: " + response.message);
+        }
+        hideSplashLoader();
+      })
+      .withFailureHandler((err) => {
+        showToast("Server Connection Failed: " + err.toString());
+        hideSplashLoader();
+      })
+      .getClientPortfolioData();
+  }
+
+  // Dynamic application settings mapping
+  function applyCompanyProfileData() {
+    const info = appState.companyInfo;
+    
+    // Bind intro context
+    document.getElementById('intro-company-name').textContent = info.CompanyName || "SDY Company C&I";
+    
+    // Bind contact panels
+    document.getElementById('contact-company-address').textContent = info.Address || "";
+    document.getElementById('contact-company-phone').textContent = info.PhoneNumber || "";
+    document.getElementById('contact-company-email').textContent = info.Email || "";
+    
+    // Social & messenger links
+    if (info.TelegramLink) document.getElementById('telegram-link').href = info.TelegramLink;
+    if (info.WhatsApp) document.getElementById('whatsapp-link').href = info.WhatsApp;
+    
+    // Embed map URL
+    if (info.GoogleMapEmbedURL) {
+      document.getElementById('google-maps-iframe').src = info.GoogleMapEmbedURL;
+    }
+    
+    // Bind footers
+    document.getElementById('footer-office-hours').textContent = info.OfficeHours || "Monday - Saturday: 8:00 AM - 5:00 PM";
+    document.getElementById('footer-copyright').innerHTML = `&copy; 2026 ${info.CompanyName || 'SDY Company'}. All rights reserved.`;
+  }
+
+  function hideSplashLoader() {
+    const splash = document.getElementById('splash-loader');
+    if (splash) {
+      splash.classList.add('opacity-0', 'pointer-events-none');
+      setTimeout(() => splash.remove(), 500);
+    }
+  }
+
+  // SPA View Routing Navigation Control
+  function navigate(viewName) {
+    appState.currentView = viewName;
+    
+    // Hide all viewports
+    document.querySelectorAll('.view-section').forEach(sec => {
+      sec.classList.add('hidden');
+    });
+    
+    // Reveal current viewport
+    const activeSection = document.getElementById(`view-${viewName}`);
+    if (activeSection) {
+      activeSection.classList.remove('hidden');
+    }
+    
+    // Update navigation active highlight styling classes
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.classList.remove('bg-primary', 'text-white', 'shadow-md');
+      btn.classList.add('text-dark/70', 'dark:text-white/70', 'hover:bg-black/5');
+    });
+    
+    const activeNav = document.getElementById(`nav-${viewName}`);
+    if (activeNav) {
+      activeNav.classList.add('bg-primary', 'text-white', 'shadow-md');
+      activeNav.classList.remove('text-dark/70', 'dark:text-white/70', 'hover:bg-black/5');
+    }
+    
+    // Scroll window smoothly back to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Close mobile menu if opened
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileMenu.classList.add('hidden');
+  }
+
+  // Toggle Mobile Menu Drawer
+  function toggleMobileMenu() {
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileMenu.classList.contains('hidden')) {
+      mobileMenu.classList.remove('hidden');
+    } else {
+      mobileMenu.classList.add('hidden');
+    }
+  }
+
+  // ==================== RENDERING COMPONENT ENGINES ====================
+
+  // Render Home
+  function renderHome() {
+    const grid = document.getElementById('testimonials-grid-container');
+    grid.innerHTML = '';
+    
+    STATIC_TESTIMONIALS.forEach(item => {
+      const card = document.createElement('div');
+      card.className = "p-6 rounded-2xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 shadow-sm space-y-4 sleek-card flex flex-col justify-between";
+      card.innerHTML = `
+        <div class="space-y-3">
+          <!-- Star Ratings -->
+          <div class="flex gap-1 text-amber-400">
+            ${Array(5).fill('<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>').join('')}
+          </div>
+          <p class="text-xs text-dark/65 dark:text-white/65 leading-relaxed italic">"${item.quote}"</p>
+        </div>
+        <div class="pt-4 border-t border-black/5 dark:border-white/5 flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xs text-primary dark:text-accent">
+            ${item.author.charAt(0)}
+          </div>
+          <div>
+            <h4 class="font-bold text-xs text-dark dark:text-white">${item.author}</h4>
+            <p class="text-[10px] text-dark/45 dark:text-white/40 font-medium">${item.title}</p>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // Service translation keys mapping for the 6 static home/services showcase items
+  const serviceTranslationKeys = {
+    'srv_1': { name: 'service.s1.name', desc: 'service.s1.description' },
+    'srv_2': { name: 'service.s4.name', desc: 'service.s4.description' },
+    'srv_3': { name: 'service.s7.name', desc: 'service.s7.description' },
+    'srv_4': { name: 'service.s9.name', desc: 'service.s9.description' },
+    'srv_5': { name: 'service.s11.name', desc: 'service.s11.description' },
+    'srv_6': { name: 'service.s10.name', desc: 'service.s10.description' }
+  };
+
+  // Render Services
+  function renderServices() {
+    const tabsContainer = document.getElementById('services-tabs-container');
+    const grid = document.getElementById('services-cards-grid');
+    if (!tabsContainer || !grid) return;
+    
+    // Map unique tabs with translation keys
+    const categoryKeys = {
+      'All': 'services.cat_all',
+      'Design & Fit-Out': 'services.cat_design_fitout',
+      'Doors & Manufacturing': 'services.cat_doors_manufacturing',
+      'Structural Steel': 'services.cat_structural_steel',
+      'Glass & Facade': 'services.cat_glass_facade'
+    };
+    const categories = ['All', 'Design & Fit-Out', 'Doors & Manufacturing', 'Structural Steel', 'Glass & Facade'];
+    tabsContainer.innerHTML = '';
+    
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = `px-4.5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all ${appState.servicesFilter === cat ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-dark text-dark/70 dark:text-white/70 border border-black/5'}`;
+      btn.textContent = t(categoryKeys[cat] || cat, cat);
+      btn.onclick = () => {
+        appState.servicesFilter = cat;
+        renderServices();
+      };
+      tabsContainer.appendChild(btn);
+    });
+
+    grid.innerHTML = '';
+    const filtered = STATIC_SERVICES.filter(srv => appState.servicesFilter === 'All' || srv.category === appState.servicesFilter);
+    
+    filtered.forEach(srv => {
+      const card = document.createElement('div');
+      card.className = "p-6 rounded-2xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 shadow-sm space-y-4 sleek-card flex flex-col justify-between";
+      
+      const keys = serviceTranslationKeys[srv.id];
+      const srvName = keys ? t(keys.name, srv.name) : srv.name;
+      const srvDesc = keys ? t(keys.desc, srv.description) : srv.description;
+      const displayCategory = t(categoryKeys[srv.category] || srv.category, srv.category);
+      
+      card.innerHTML = `
+        <div class="space-y-3">
+          <span class="text-[9px] bg-primary/10 text-primary dark:text-accent font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block">${displayCategory}</span>
+          <h3 class="font-bold text-lg text-dark dark:text-white">${srvName}</h3>
+          <p class="text-xs text-dark/60 dark:text-white/60 leading-relaxed">${srvDesc}</p>
+        </div>
+        <div class="pt-4 border-t border-black/5 dark:border-white/10 flex items-center justify-between">
+          <span class="text-[11px] text-dark/45 dark:text-white/45 font-semibold">${srv.details}</span>
+          <button onclick="navigate('contact'); document.getElementById('form-subject').value = '${srvName} Estimate';" class="p-2 rounded-lg bg-primary/5 hover:bg-primary/20 text-primary dark:text-accent font-bold text-xs transition-colors">
+            ${t('services.inquire_division', 'Inquire Division')} &rarr;
+          </button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // Render Products
+  function renderProducts() {
+    const tabsContainer = document.getElementById('products-tabs-container');
+    const grid = document.getElementById('products-grid-container');
+    if (!tabsContainer || !grid) return;
+    
+    const categoryKeys = {
+      'All': 'services.cat_all',
+      'Doors': 'products.cat_doors',
+      'Furniture': 'products.cat_furniture',
+      'Steel': 'products.cat_steel',
+      'Glass': 'products.cat_glass'
+    };
+    const categories = ['All', 'Doors', 'Furniture', 'Steel', 'Glass'];
+    tabsContainer.innerHTML = '';
+    
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = `px-4.5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all ${appState.productsFilter === cat ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-dark text-dark/70 dark:text-white/70 border border-black/5'}`;
+      btn.textContent = t(categoryKeys[cat] || cat, cat);
+      btn.onclick = () => {
+        appState.productsFilter = cat;
+        renderProducts();
+      };
+      tabsContainer.appendChild(btn);
+    });
+
+    grid.innerHTML = '';
+    const filtered = appState.products.filter(prod => {
+      const matchesCat = appState.productsFilter === 'All' || prod.category === appState.productsFilter;
+      return matchesCat;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<p class="text-xs text-dark/40 dark:text-white/40 text-center col-span-3 py-12">${t('admin.no_products_found', 'No materials matching filters found.')}</p>`;
+      return;
+    }
+
+    filtered.forEach(prod => {
+      const card = document.createElement('div');
+      card.className = "group rounded-2xl overflow-hidden bg-white dark:bg-dark border border-black/5 dark:border-white/5 shadow-sm space-y-4 sleek-card cursor-pointer";
+      card.onclick = () => openProductModal(prod);
+      
+      const lang = appState.currentLang || 'en';
+      let prodName = prod.name;
+      let prodDesc = prod.description;
+      if (lang === 'km') {
+        prodName = prod.ProductName_KH || prod.name;
+        prodDesc = prod.Description_KH || prod.description;
+      } else if (lang === 'ko') {
+        prodName = prod.ProductName_KO || prod.name;
+        prodDesc = prod.Description_KO || prod.description;
+      } else {
+        prodName = prod.ProductName_EN || prod.name;
+        prodDesc = prod.Description_EN || prod.description;
+      }
+      
+      const displayCategory = t(categoryKeys[prod.category] || prod.category, prod.category);
+      
+      card.innerHTML = `
+        <div class="relative aspect-square overflow-hidden bg-black/5">
+          <img src="${prod.image}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${prodName}" />
+          <span class="absolute top-3 left-3 bg-white/95 dark:bg-dark/95 text-dark dark:text-white text-[9px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm z-10">${displayCategory}</span>
+        </div>
+        <div class="p-6 space-y-3">
+          <h4 class="font-bold text-base text-dark dark:text-white group-hover:text-primary dark:group-hover:text-accent transition-colors duration-300">${prodName}</h4>
+          <p class="text-xs text-dark/60 dark:text-white/60 line-clamp-2 leading-relaxed">${prodDesc}</p>
+          <div class="pt-3 border-t border-black/5 dark:border-white/15 flex justify-between items-center text-[10px] uppercase font-bold text-dark/45 dark:text-white/45 tracking-wider">
+            <span>Mat: ${prod.material || 'Standard'}</span>
+            <span class="text-primary dark:text-accent">${t('blog.read_article', 'View Spec Sheets')} &rarr;</span>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // Internal product search filter
+  function filterProducts() {
+    const q = document.getElementById('product-internal-search').value.toLowerCase();
+    const grid = document.getElementById('products-grid-container');
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    const filtered = appState.products.filter(prod => {
+      const matchesCat = appState.productsFilter === 'All' || prod.category === appState.productsFilter;
+      const matchesSearch = prod.name.toLowerCase().includes(q) || 
+                            prod.description.toLowerCase().includes(q) || 
+                            (prod.material && prod.material.toLowerCase().includes(q)) ||
+                            (prod.specification && prod.specification.toLowerCase().includes(q));
+      return matchesCat && matchesSearch;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<p class="text-xs text-dark/40 dark:text-white/40 text-center col-span-3 py-12">${t('admin.no_products_found', 'No products match your custom searches.')}</p>`;
+      return;
+    }
+
+    const categoryKeys = {
+      'All': 'services.cat_all',
+      'Doors': 'products.cat_doors',
+      'Furniture': 'products.cat_furniture',
+      'Steel': 'products.cat_steel',
+      'Glass': 'products.cat_glass'
+    };
+
+    filtered.forEach(prod => {
+      const card = document.createElement('div');
+      card.className = "group rounded-2xl overflow-hidden bg-white dark:bg-dark border border-black/5 dark:border-white/5 shadow-sm space-y-4 sleek-card cursor-pointer";
+      card.onclick = () => openProductModal(prod);
+      
+      const lang = appState.currentLang || 'en';
+      let prodName = prod.name;
+      let prodDesc = prod.description;
+      if (lang === 'km') {
+        prodName = prod.ProductName_KH || prod.name;
+        prodDesc = prod.Description_KH || prod.description;
+      } else if (lang === 'ko') {
+        prodName = prod.ProductName_KO || prod.name;
+        prodDesc = prod.Description_KO || prod.description;
+      } else {
+        prodName = prod.ProductName_EN || prod.name;
+        prodDesc = prod.Description_EN || prod.description;
+      }
+      
+      const displayCategory = t(categoryKeys[prod.category] || prod.category, prod.category);
+      
+      card.innerHTML = `
+        <div class="relative aspect-square overflow-hidden bg-black/5">
+          <img src="${prod.image}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${prodName}" />
+          <span class="absolute top-3 left-3 bg-white/95 dark:bg-dark/95 text-dark dark:text-white text-[9px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm z-10">${displayCategory}</span>
+        </div>
+        <div class="p-6 space-y-3">
+          <h4 class="font-bold text-base text-dark dark:text-white group-hover:text-primary dark:group-hover:text-accent transition-colors duration-300">${prodName}</h4>
+          <p class="text-xs text-dark/60 dark:text-white/60 line-clamp-2 leading-relaxed">${prodDesc}</p>
+          <div class="pt-3 border-t border-black/5 dark:border-white/15 flex justify-between items-center text-[10px] uppercase font-bold text-dark/45 dark:text-white/45 tracking-wider">
+            <span>Mat: ${prod.material || 'Standard'}</span>
+            <span class="text-primary dark:text-accent">${t('blog.read_article', 'View Spec Sheets')} &rarr;</span>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // Render Projects
+  function renderProjects() {
+    const tabsContainer = document.getElementById('projects-tabs-container');
+    const grid = document.getElementById('projects-grid-container');
+    if (!tabsContainer || !grid) return;
+    
+    const categories = ['All', 'Commercial', 'Residential', 'Industrial'];
+    tabsContainer.innerHTML = '';
+    
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = `px-4.5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all ${appState.projectsFilter === cat ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-dark text-dark/70 dark:text-white/70 border border-black/5'}`;
+      
+      // Localized display name
+      let displayCatName = cat;
+      if (cat === 'All') displayCatName = t('services.cat_all', 'All');
+      else if (cat === 'Commercial') displayCatName = t('services.cat_design_fitout', 'Commercial');
+      else if (cat === 'Residential') {
+        const lang = appState.currentLang || 'en';
+        displayCatName = lang === 'km' ? 'លំនៅឋាន' : (lang === 'ko' ? '주거용' : 'Residential');
+      } else if (cat === 'Industrial') {
+        const lang = appState.currentLang || 'en';
+        displayCatName = lang === 'km' ? 'ឧស្សាហកម្ម' : (lang === 'ko' ? '산업용' : 'Industrial');
+      }
+      
+      btn.textContent = displayCatName;
+      btn.onclick = () => {
+        appState.projectsFilter = cat;
+        renderProjects();
+      };
+      tabsContainer.appendChild(btn);
+    });
+
+    grid.innerHTML = '';
+    const filtered = appState.projects.filter(proj => appState.projectsFilter === 'All' || proj.category === appState.projectsFilter);
+    
+    if (filtered.length === 0) {
+      grid.innerHTML = `<p class="text-xs text-dark/40 dark:text-white/40 text-center col-span-3 py-12">${t('admin.no_projects_found', 'No projects matching category found.')}</p>`;
+      return;
+    }
+
+    filtered.forEach(proj => {
+      const card = document.createElement('div');
+      card.className = "group relative rounded-2xl overflow-hidden bg-black aspect-video cursor-pointer shadow-lg";
+      card.onclick = () => openProjectModal(proj);
+      
+      const lang = appState.currentLang || 'en';
+      let projTitle = proj.title;
+      if (lang === 'km') {
+        projTitle = proj.ProjectName_KH || proj.title;
+      } else if (lang === 'ko') {
+        projTitle = proj.ProjectName_KO || proj.title;
+      } else {
+        projTitle = proj.ProjectName_EN || proj.title;
+      }
+      
+      let displayCategory = proj.category;
+      if (proj.category === 'Commercial') displayCategory = t('services.cat_design_fitout', 'Commercial');
+      else if (proj.category === 'Residential') {
+        displayCategory = lang === 'km' ? 'លំនៅឋាន' : (lang === 'ko' ? '주거용' : 'Residential');
+      } else if (proj.category === 'Industrial') {
+        displayCategory = lang === 'km' ? 'ឧស្សាហកម្ម' : (lang === 'ko' ? '산업용' : 'Industrial');
+      }
+      
+      card.innerHTML = `
+        <img src="${proj.coverImage}" class="w-full h-full object-cover opacity-75 group-hover:scale-105 group-hover:opacity-40 transition-all duration-500" alt="${projTitle}" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent flex flex-col justify-between p-6">
+          <span class="self-start px-2.5 py-1 bg-white/10 rounded-md backdrop-blur-md text-white text-[9px] font-bold uppercase tracking-wider">${displayCategory}</span>
+          <div class="space-y-1">
+            <h4 class="text-white font-extrabold text-lg leading-tight">${projTitle}</h4>
+            <div class="flex items-center gap-3 text-[10px] text-white/70 font-semibold uppercase tracking-wider">
+              <span>${proj.location}</span>
+              <span>•</span>
+              <span>${proj.area}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // Render About
+  function renderAbout() {
+    const boardContainer = document.getElementById('team-board-container');
+    const execContainer = document.getElementById('team-executive-container');
+    
+    boardContainer.innerHTML = '';
+    execContainer.innerHTML = '';
+    
+    appState.team.forEach(member => {
+      const card = document.createElement('div');
+      card.className = "p-5 rounded-2xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 text-center shadow-sm w-48 shrink-0 sleek-card";
+      card.innerHTML = `
+        <div class="w-11 h-11 rounded-full bg-primary/10 text-primary dark:text-accent font-black text-xs flex items-center justify-center mx-auto mb-3">
+          ${member.name.charAt(0)}
+        </div>
+        <h5 class="font-bold text-xs text-dark dark:text-white">${member.name}</h5>
+        <p class="text-[10px] text-dark/50 dark:text-white/45 mt-1 leading-snug">${member.role}</p>
+      `;
+      
+      if (member.tier === 'Board') {
+        boardContainer.appendChild(card);
+      } else {
+        execContainer.appendChild(card);
+      }
+    });
+    
+    if (boardContainer.children.length === 0) {
+      boardContainer.innerHTML = '<p class="text-xs text-dark/40">No Board Members added to Sheet.</p>';
+    }
+    if (execContainer.children.length === 0) {
+      execContainer.innerHTML = '<p class="text-xs text-dark/40 col-span-3">No Executive Directors added.</p>';
+    }
+  }
+
+  // Render Blog
+  function renderBlog() {
+    const container = document.getElementById('blog-grid-container');
+    container.innerHTML = '';
+    
+    if (appState.blog.length === 0) {
+      container.innerHTML = '<p class="text-xs text-dark/40 dark:text-white/40 text-center col-span-3 py-12">No blog articles published.</p>';
+      return;
+    }
+    
+    appState.blog.forEach(post => {
+      const card = document.createElement('div');
+      card.className = "group bg-white dark:bg-dark rounded-2xl overflow-hidden border border-black/5 dark:border-white/5 shadow-sm space-y-4 sleek-card cursor-pointer";
+      card.onclick = () => openBlogModal(post);
+      card.innerHTML = `
+        <div class="relative aspect-video overflow-hidden bg-black/5">
+          <img src="${post.image}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${post.title}" />
+        </div>
+        <div class="p-6 space-y-3">
+          <div class="flex items-center justify-between text-[10px] text-dark/40 dark:text-white/40">
+            <span>${post.date}</span>
+            <span class="uppercase font-bold text-primary dark:text-accent">${post.category}</span>
+          </div>
+          <h4 class="font-bold text-base text-dark dark:text-white group-hover:text-primary dark:group-hover:text-accent transition-colors duration-300 line-clamp-2">${post.title}</h4>
+          <p class="text-xs text-dark/60 dark:text-white/60 line-clamp-2 leading-relaxed">${post.excerpt}</p>
+          <div class="pt-3 border-t border-black/5 dark:border-white/10 text-[10px] uppercase font-bold text-dark/45 dark:text-white/40 flex justify-between">
+            <span>By ${post.author}</span>
+            <span>Read Article &rarr;</span>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // ==================== OVERLAYS & MODALS ACTION ====================
+
+  // Product modal
+  function openProductModal(prod) {
+    appState.selectedProduct = prod;
+    
+    const lang = appState.currentLang || 'en';
+    let prodName = prod.name;
+    let prodDesc = prod.description;
+    if (lang === 'km') {
+      prodName = prod.ProductName_KH || prod.name;
+      prodDesc = prod.Description_KH || prod.description;
+    } else if (lang === 'ko') {
+      prodName = prod.ProductName_KO || prod.name;
+      prodDesc = prod.Description_KO || prod.description;
+    } else {
+      prodName = prod.ProductName_EN || prod.name;
+      prodDesc = prod.Description_EN || prod.description;
+    }
+
+    document.getElementById('modal-product-img').src = prod.image;
+    document.getElementById('modal-product-category').textContent = prod.category;
+    document.getElementById('modal-product-name').textContent = prodName;
+    document.getElementById('modal-product-desc').textContent = prodDesc;
+    
+    document.getElementById('modal-product-spec').textContent = prod.specification || 'N/A';
+    document.getElementById('modal-product-material').textContent = prod.material || 'N/A';
+    document.getElementById('modal-product-size').textContent = prod.size || 'N/A';
+    
+    const modal = document.getElementById('product-detail-modal');
+    modal.classList.remove('hidden');
+  }
+
+  function closeProductModal() {
+    document.getElementById('product-detail-modal').classList.add('hidden');
+  }
+
+  // Project modal
+  function openProjectModal(proj) {
+    appState.selectedProject = proj;
+    
+    const lang = appState.currentLang || 'en';
+    let projTitle = proj.title;
+    let projDesc = proj.description || '';
+    if (lang === 'km') {
+      projTitle = proj.ProjectName_KH || proj.title;
+      projDesc = proj.Description_KH || proj.description || '';
+    } else if (lang === 'ko') {
+      projTitle = proj.ProjectName_KO || proj.title;
+      projDesc = proj.Description_KO || proj.description || '';
+    } else {
+      projTitle = proj.ProjectName_EN || proj.title;
+      projDesc = proj.Description_EN || proj.description || '';
+    }
+
+    document.getElementById('modal-project-img').src = proj.coverImage;
+    document.getElementById('modal-project-category').textContent = proj.category;
+    document.getElementById('modal-project-title').textContent = projTitle;
+    document.getElementById('modal-project-type').textContent = proj.constructionType || 'Pre-Engineered Assembly';
+    document.getElementById('modal-project-area').textContent = proj.area || 'N/A';
+    document.getElementById('modal-project-year').textContent = proj.completionYear || 'N/A';
+    document.getElementById('modal-project-desc').textContent = projDesc;
+    document.getElementById('modal-project-location').textContent = proj.location || 'Cambodia';
+    
+    // Map dynamic gallery
+    const galleryContainer = document.getElementById('modal-project-gallery');
+    galleryContainer.innerHTML = '';
+    
+    const list = Array.isArray(proj.gallery) ? proj.gallery : [proj.coverImage];
+    list.forEach(src => {
+      const img = document.createElement('img');
+      img.className = "rounded-xl aspect-square object-cover border border-black/5 bg-black/5 hover:scale-[1.03] transition-transform";
+      img.src = src;
+      galleryContainer.appendChild(img);
+    });
+
+    document.getElementById('project-detail-modal').classList.remove('hidden');
+  }
+
+  function closeProjectModal() {
+    document.getElementById('project-detail-modal').classList.add('hidden');
+  }
+
+  // Blog modal
+  function openBlogModal(post) {
+    appState.selectedBlog = post;
+    document.getElementById('modal-blog-img').src = post.image;
+    document.getElementById('modal-blog-category').textContent = post.category;
+    document.getElementById('modal-blog-date').textContent = post.date;
+    document.getElementById('modal-blog-author').textContent = `By ${post.author}`;
+    document.getElementById('modal-blog-content').textContent = post.content || '';
+    
+    document.getElementById('blog-detail-modal').classList.remove('hidden');
+  }
+
+  function closeBlogModal() {
+    document.getElementById('blog-detail-modal').classList.add('hidden');
+  }
+
+  // Close overlays when clicking outside the dialog card
+  window.addEventListener('click', (e) => {
+    const prodModal = document.getElementById('product-detail-modal');
+    const projModal = document.getElementById('project-detail-modal');
+    const blogModal = document.getElementById('blog-detail-modal');
+    
+    if (e.target === prodModal) closeProductModal();
+    if (e.target === projModal) closeProjectModal();
+    if (e.target === blogModal) closeBlogModal();
+  });
+
+
+  // ==================== VISITOR CONTACT PIPELINE ====================
+  function submitContactForm(event) {
+    event.preventDefault();
+    
+    const submitBtn = document.getElementById('form-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting Inquiries...';
+    
+    const formPayload = {
+      name: document.getElementById('form-name').value,
+      company: document.getElementById('form-company').value || 'N/A',
+      phone: document.getElementById('form-phone').value,
+      email: document.getElementById('form-email').value,
+      subject: document.getElementById('form-subject').value,
+      message: document.getElementById('form-message').value
+    };
+
+    if (typeof google === 'undefined') {
+      setTimeout(() => {
+        showToast("Simulation: Form successfully written directly to Sheets!");
+        document.getElementById('contact-inquiry-form').reset();
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Spec Proposals';
+      }, 1000);
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          showToast(response.message);
+          document.getElementById('contact-inquiry-form').reset();
+          
+          // Refresh inbox list dynamically if admin is viewing
+          loadAdminData();
+        } else {
+          showToast("Error processing form: " + response.message);
+        }
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Spec Proposals';
+      })
+      .withFailureHandler((err) => {
+        showToast("Network pipeline failure: " + err.toString());
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Spec Proposals';
+      })
+      .saveContactMessage(formPayload);
+  }
+  // ==================== ENTERPRISE SECURE ADMIN CONSOLE ====================
+  
+  // Try to restore admin session from storage on load
+  window.addEventListener('DOMContentLoaded', () => {
+    checkAdminSessionOnLoad();
+  });
+
+  function checkAdminSessionOnLoad() {
+    const token = localStorage.getItem('sdy_admin_token');
+    if (token) {
+      // Validate session server-side
+      google.script.run
+        .withSuccessHandler((isValid) => {
+          if (isValid) {
+            revealAdminDashboard();
+          } else {
+            localStorage.removeItem('sdy_admin_token');
+          }
+        })
+        .verifySession(token);
+    }
+  }
+
+  function handleAdminLogin(event) {
+    event.preventDefault();
+    const password = document.getElementById('admin-login-password').value;
+    const loginBtn = document.getElementById('admin-login-btn');
+    
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Verifying security signature...';
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Unlock Dashboard';
+        
+        if (response.status === 'success') {
+          localStorage.setItem('sdy_admin_token', response.token);
+          showToast(response.message);
+          document.getElementById('admin-login-password').value = '';
+          revealAdminDashboard();
+        } else {
+          showToast(response.message);
+        }
+      })
+      .withFailureHandler((err) => {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Unlock Dashboard';
+        showToast("Access Controller Failure: " + err.toString());
+      })
+      .adminLogin(password);
+  }
+
+  function handleAdminLogout() {
+    const token = localStorage.getItem('sdy_admin_token');
+    if (token) {
+      google.script.run.adminLogout(token);
+    }
+    localStorage.removeItem('sdy_admin_token');
+    
+    // Switch visual state
+    document.getElementById('admin-login-panel').classList.remove('hidden');
+    document.getElementById('admin-dashboard-panel').classList.add('hidden');
+    showToast("Session closed. Dashboard locked.");
+  }
+
+  function revealAdminDashboard() {
+    document.getElementById('admin-login-panel').classList.add('hidden');
+    document.getElementById('admin-dashboard-panel').classList.remove('hidden');
+    setAdminTab('messages');
+    loadAdminData();
+  }
+
+  function setAdminTab(tabName) {
+    appState.activeAdminTab = tabName;
+    
+    document.querySelectorAll('.admin-panel').forEach(panel => {
+      panel.classList.add('hidden');
+    });
+    
+    const activePanel = document.getElementById(`admin-panel-${tabName}`);
+    if (activePanel) {
+      activePanel.classList.remove('hidden');
+    }
+    
+    document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+      btn.className = "admin-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold tracking-wide uppercase transition-all bg-white dark:bg-dark text-dark/75 dark:text-white/70 hover:bg-primary/5 border border-transparent";
+    });
+    
+    const activeBtn = document.getElementById(`admin-tab-${tabName}`);
+    if (activeBtn) {
+      activeBtn.className = "admin-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold tracking-wide uppercase transition-all bg-primary text-white shadow-lg border-transparent";
+    }
+  }
+
+  function loadAdminData() {
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          appState.adminData = response;
+          
+          // Re-sync local product/project listings
+          appState.products = response.products;
+          appState.projects = response.projects;
+          appState.blog = response.blogs;
+          
+          // Update visual stats counters
+          document.getElementById('stat-total-leads').textContent = response.analytics.totalLeads;
+          document.getElementById('stat-pending-leads').textContent = response.analytics.pendingLeads;
+          document.getElementById('stat-total-quotes').textContent = response.analytics.totalQuotationValue;
+          document.getElementById('stat-products-count').textContent = response.productsCount;
+          
+          // Set badges count inside sidebar navigation menu if badges exist
+          const inqBadge = document.getElementById('admin-inquiries-count');
+          if (inqBadge) inqBadge.textContent = response.inquiries.length;
+          const prodBadge = document.getElementById('admin-products-count');
+          if (prodBadge) prodBadge.textContent = response.productsCount;
+          
+          // Set Company Profile settings form values
+          const info = response.companyInfo;
+          document.getElementById('config-company-name').value = info.CompanyName || '';
+          document.getElementById('config-company-logo').value = info.Logo || '';
+          document.getElementById('config-phone').value = info.PhoneNumber || '';
+          document.getElementById('config-email').value = info.Email || '';
+          document.getElementById('config-address').value = info.Address || '';
+          document.getElementById('config-maps').value = info.GoogleMapEmbedURL || '';
+          document.getElementById('config-telegram').value = info.TelegramLink || '';
+          document.getElementById('config-whatsapp').value = info.WhatsApp || '';
+          
+          // Populate Real-Time Analytical Charts
+          drawAnalyticsTrendChart(response.analytics.monthlyLeadTrends);
+          
+          // Render admin modules
+          renderAdminInboxes();
+          renderAdminQuotations();
+          renderAdminProducts();
+          renderAdminProjects();
+          renderAdminBlogs();
+          renderAdminAuditLogs();
+        } else {
+          showToast("Admin session expired. Please authenticate again.");
+          handleAdminLogout();
+        }
+      })
+      .withFailureHandler((err) => {
+        showToast("Error retrieving administrative records: " + err.toString());
+      })
+      .getAdminData(token);
+  }
+
+  // Draw vertical lead trend bar charts dynamically
+  function drawAnalyticsTrendChart(trends) {
+    const chart = document.getElementById('chart-leads-trend');
+    if (!chart) return;
+    chart.innerHTML = '';
+    
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let maxVal = 1;
+    
+    // Find maximum count for relative height mapping
+    months.forEach(m => {
+      const val = trends[m] || 0;
+      if (val > maxVal) maxVal = val;
+    });
+    
+    months.forEach(m => {
+      const val = trends[m] || 0;
+      const pct = (val / maxVal) * 100;
+      
+      const barCol = document.createElement('div');
+      barCol.className = "flex flex-col items-center gap-1.5 flex-1 group cursor-pointer";
+      barCol.innerHTML = `
+        <div class="w-full bg-slate-100 dark:bg-white/5 rounded-t-lg relative flex items-end h-24 overflow-hidden">
+          <div class="bg-primary group-hover:bg-accent w-full transition-all duration-500 rounded-t-md" style="height: ${pct}%"></div>
+          <!-- Popover counts on hover -->
+          <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-dark text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">${val} Leads</span>
+        </div>
+        <span class="text-[9px] font-mono font-bold text-dark/45 dark:text-white/45">${m}</span>
+      `;
+      chart.appendChild(barCol);
+    });
+  }
+
+  // Tab 1: Render messages inbox logs list
+  function renderAdminInboxes() {
+    const list = document.getElementById('admin-messages-list');
+    list.innerHTML = '';
+    
+    const inquiries = appState.adminData.inquiries || [];
+    if (inquiries.length === 0) {
+      list.innerHTML = '<p class="text-xs text-dark/40 dark:text-white/40 text-center py-12">No corporate inquiries received yet.</p>';
+      return;
+    }
+
+    inquiries.forEach(inq => {
+      const statusColor = inq.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300' : (inq.status === 'Contacted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300');
+      
+      const card = document.createElement('div');
+      card.className = "p-5 rounded-2xl bg-bg-light dark:bg-[#101828]/50 border border-black/5 dark:border-white/5 shadow-sm space-y-3";
+      card.innerHTML = `
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <div class="space-y-0.5">
+            <h4 class="font-bold text-xs text-dark dark:text-white">${inq.name} <span class="font-normal text-dark/50">(${inq.company})</span></h4>
+            <p class="text-[9px] font-mono text-dark/40 dark:text-white/40">${inq.date}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${statusColor}">${inq.status}</span>
+            <select onchange="changeInquiryStatus('${inq.id}', this.value)" class="text-[10px] px-2 py-1 rounded bg-white dark:bg-dark border border-black/10 dark:border-white/10 text-dark dark:text-white focus:outline-none">
+              <option value="Pending" ${inq.status === 'Pending' ? 'selected' : ''}>Pending</option>
+              <option value="Contacted" ${inq.status === 'Contacted' ? 'selected' : ''}>Contacted</option>
+              <option value="Completed" ${inq.status === 'Completed' ? 'selected' : ''}>Completed</option>
+            </select>
+            <button onclick="removeInquiryRecord('${inq.id}')" class="p-1 hover:text-red-500 transition-colors" title="Delete Inquiry">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="space-y-1 pt-2 border-t border-black/5 dark:border-white/10 text-xs">
+          <p class="text-dark/55 dark:text-white/50"><strong>Direct line:</strong> ${inq.phone} | <strong>Email:</strong> ${inq.email}</p>
+          <p class="text-dark/55 dark:text-white/50"><strong>Subject line:</strong> <span class="text-primary dark:text-accent font-semibold">${inq.subject}</span></p>
+          <p class="text-dark/75 dark:text-white/70 bg-white dark:bg-dark p-3.5 rounded-xl border border-black/5 dark:border-white/5 mt-2 italic leading-relaxed">"${inq.message}"</p>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function changeInquiryStatus(id, newStatus) {
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          showToast(response.message);
+          loadAdminData();
+        }
+      })
+      .updateMessageStatus(token, id, newStatus);
+  }
+
+  function removeInquiryRecord(id) {
+    if (!confirm("Are you sure you want to delete this visitor inquiry record permanently from Google Sheets?")) return;
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          showToast(response.message);
+          loadAdminData();
+        }
+      })
+      .deleteMessage(token, id);
+  }
+
+  // Tab 1.5: Render Spec Quotations Inbox list
+  function renderAdminQuotations() {
+    const list = document.getElementById('admin-quotations-list');
+    list.innerHTML = '';
+    
+    const quotations = appState.adminData.quotations || [];
+    if (quotations.length === 0) {
+      list.innerHTML = '<p class="text-xs text-dark/40 dark:text-white/40 text-center py-12">No quotation sheets compiled yet.</p>';
+      return;
+    }
+
+    quotations.forEach(qte => {
+      const statusColor = qte.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300' : (qte.status === 'Contacted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300');
+      
+      const card = document.createElement('div');
+      card.className = "p-5 rounded-2xl bg-bg-light dark:bg-[#101828]/50 border border-black/5 dark:border-white/5 shadow-sm space-y-3";
+      card.innerHTML = `
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <div class="space-y-0.5">
+            <h4 class="font-bold text-xs text-dark dark:text-white">${qte.clientName} <span class="font-normal text-dark/50">(${qte.company || 'Private Builder'})</span></h4>
+            <p class="text-[9px] font-mono text-dark/40 dark:text-white/40">ID: ${qte.id} | Timestamp: ${qte.date}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${statusColor}">${qte.status}</span>
+            <select onchange="changeQuotationStatus('${qte.id}', this.value)" class="text-[10px] px-2 py-1 rounded bg-white dark:bg-dark border border-black/10 dark:border-white/10 text-dark dark:text-white focus:outline-none">
+              <option value="Pending" ${qte.status === 'Pending' ? 'selected' : ''}>Pending</option>
+              <option value="Contacted" ${qte.status === 'Contacted' ? 'selected' : ''}>Contacted</option>
+              <option value="Completed" ${qte.status === 'Completed' ? 'selected' : ''}>Completed</option>
+            </select>
+            <button onclick="removeQuotationRecord('${qte.id}')" class="p-1 hover:text-red-500 transition-colors" title="Delete Quote">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="space-y-2 pt-2 border-t border-black/5 dark:border-white/10 text-xs">
+          <p class="text-dark/55 dark:text-white/50"><strong>Estimator contact:</strong> ${qte.clientPhone} | <strong>Email:</strong> ${qte.clientEmail}</p>
+          <div class="bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/10 mt-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-primary dark:text-accent block mb-1">Subsystems / Material Selected:</span>
+            <span class="font-semibold text-dark dark:text-white leading-relaxed">${qte.items}</span>
+          </div>
+          ${qte.notes ? `<p class="text-dark/70 dark:text-white/60 italic mt-1.5 leading-relaxed bg-white dark:bg-dark p-3.5 rounded-xl border border-black/5 dark:border-white/5">"Notes: ${qte.notes}"</p>` : ''}
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function changeQuotationStatus(id, newStatus) {
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          showToast(response.message);
+          loadAdminData();
+        }
+      })
+      .updateQuotationStatus(token, id, newStatus);
+  }
+
+  function removeQuotationRecord(id) {
+    if (!confirm("Are you sure you want to delete this quote specification record permanently?")) return;
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          showToast(response.message);
+          loadAdminData();
+        }
+      })
+      .removeQuotationRecord(token, id);
+  }
+
+  // Tab 2: Render products table with editing actions
+  function renderAdminProducts() {
+    const tbody = document.getElementById('admin-products-table');
+    tbody.innerHTML = '';
+    
+    appState.products.forEach(prod => {
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-black/5 dark:hover:bg-white/5 align-middle border-b border-black/5 dark:border-white/5";
+      tr.innerHTML = `
+        <td class="py-3.5 pr-2 font-bold text-dark dark:text-white">${prod.name}</td>
+        <td class="py-3.5 px-2 text-dark/60 dark:text-white/60">${prod.category}</td>
+        <td class="py-3.5 px-2 text-dark/60 dark:text-white/60">${prod.material || 'Standard'}</td>
+        <td class="py-3.5 px-2 text-dark/60 dark:text-white/60 font-mono">${prod.size || 'Custom size'}</td>
+        <td class="py-3.5 pl-2 text-right">
+          <div class="flex items-center justify-end gap-2">
+            <button onclick="openProductForm(JSON.parse(decodeURIComponent('${encodeURIComponent(JSON.stringify(prod))}')))" class="p-1 text-primary hover:text-accent" title="Edit product">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            </button>
+            <button onclick="deleteProductRecord('${prod.id}')" class="p-1 text-red-500 hover:text-red-700" title="Delete product">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function openProductForm(prod) {
+    const modal = document.getElementById('admin-product-modal');
+    const form = modal.querySelector('form');
+    form.reset();
+    
+    if (prod) {
+      document.getElementById('product-modal-title').textContent = "Edit Product Record";
+      document.getElementById('editor-product-id').value = prod.id || '';
+      document.getElementById('editor-product-name').value = prod.name || '';
+      document.getElementById('editor-product-category').value = prod.category || 'Interior Design';
+      document.getElementById('editor-product-image').value = prod.image || '';
+      document.getElementById('editor-product-gallery').value = prod.gallery || '';
+      document.getElementById('editor-product-desc').value = prod.description || '';
+      document.getElementById('editor-product-spec').value = prod.specification || '';
+      document.getElementById('editor-product-material').value = prod.material || '';
+      document.getElementById('editor-product-size').value = prod.size || '';
+      document.getElementById('editor-product-pdf').value = prod.pdfUrl || '';
+    } else {
+      document.getElementById('product-modal-title').textContent = "Create Product Record";
+      document.getElementById('editor-product-id').value = '';
+    }
+    
+    modal.classList.remove('hidden');
+  }
+
+  function closeProductForm() {
+    document.getElementById('admin-product-modal').classList.add('hidden');
+  }
+
+  function handleProductSubmit(event) {
+    event.preventDefault();
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    const saveBtn = document.getElementById('product-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Synchronizing product worksheets...';
+    
+    const payload = {
+      id: document.getElementById('editor-product-id').value,
+      name: document.getElementById('editor-product-name').value,
+      category: document.getElementById('editor-product-category').value,
+      image: document.getElementById('editor-product-image').value,
+      gallery: document.getElementById('editor-product-gallery').value,
+      description: document.getElementById('editor-product-desc').value,
+      specification: document.getElementById('editor-product-spec').value,
+      material: document.getElementById('editor-product-material').value,
+      size: document.getElementById('editor-product-size').value,
+      pdfUrl: document.getElementById('editor-product-pdf').value
+    };
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Product Registry';
+        
+        if (response.status === 'success') {
+          showToast(response.message);
+          closeProductForm();
+          
+          // Re-load data, which refreshes lists & catalogs in visitor screens too!
+          loadServerData(); 
+        } else {
+          showToast("CRUD transaction failed: " + response.message);
+        }
+      })
+      .withFailureHandler((err) => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Product Registry';
+        showToast("Network pipe failure: " + err.toString());
+      })
+      .saveProduct(token, payload);
+  }
+
+  function deleteProductRecord(id) {
+    if (!confirm("Are you sure you want to delete this product record from the catalog permanently?")) return;
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          showToast(response.message);
+          loadServerData();
+        } else {
+          showToast("Error: " + response.message);
+        }
+      })
+      .removeProduct(token, id);
+  }
+
+  // Tab 3: Render projects table with editing actions
+  function renderAdminProjects() {
+    const tbody = document.getElementById('admin-projects-table');
+    tbody.innerHTML = '';
+    
+    appState.projects.forEach(proj => {
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-black/5 dark:hover:bg-white/5 align-middle border-b border-black/5 dark:border-white/5";
+      tr.innerHTML = `
+        <td class="py-3.5 pr-2 font-bold text-dark dark:text-white">${proj.title}</td>
+        <td class="py-3.5 px-2 text-dark/60 dark:text-white/60">${proj.location}</td>
+        <td class="py-3.5 px-2 text-dark/60 dark:text-white/60">${proj.area}</td>
+        <td class="py-3.5 px-2 text-dark/60 dark:text-white/60 font-mono">${proj.completionYear}</td>
+        <td class="py-3.5 pl-2 text-right">
+          <div class="flex items-center justify-end gap-2">
+            <button onclick="openProjectForm(JSON.parse(decodeURIComponent('${encodeURIComponent(JSON.stringify(proj))}')))" class="p-1 text-primary hover:text-accent" title="Edit project">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            </button>
+            <button onclick="deleteProjectRecord('${proj.id}')" class="p-1 text-red-500 hover:text-red-700" title="Delete project">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function openProjectForm(proj) {
+    const modal = document.getElementById('admin-project-modal');
+    const form = modal.querySelector('form');
+    form.reset();
+    
+    if (proj) {
+      document.getElementById('project-modal-title').textContent = "Edit Project Showcase";
+      document.getElementById('editor-project-id').value = proj.id || '';
+      document.getElementById('editor-project-title').value = proj.title || '';
+      document.getElementById('editor-project-category').value = proj.category || 'Interior Design';
+      document.getElementById('editor-project-cover').value = proj.coverImage || '';
+      document.getElementById('editor-project-gallery').value = (Array.isArray(proj.gallery) ? proj.gallery.join(",") : proj.gallery) || '';
+      document.getElementById('editor-project-location').value = proj.location || '';
+      document.getElementById('editor-project-area').value = proj.area || '';
+      document.getElementById('editor-project-year').value = proj.completionYear || '';
+      document.getElementById('editor-project-desc').value = proj.description || '';
+      document.getElementById('editor-project-construction').value = proj.constructionType || '';
+    } else {
+      document.getElementById('project-modal-title').textContent = "Create Project Showcase";
+      document.getElementById('editor-project-id').value = '';
+    }
+    
+    modal.classList.remove('hidden');
+  }
+
+  function closeProjectForm() {
+    document.getElementById('admin-project-modal').classList.add('hidden');
+  }
+
+  function handleProjectSubmit(event) {
+    event.preventDefault();
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    const saveBtn = document.getElementById('project-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Synchronizing showcase files...';
+    
+    const payload = {
+      id: document.getElementById('editor-project-id').value,
+      title: document.getElementById('editor-project-title').value,
+      category: document.getElementById('editor-project-category').value,
+      coverImage: document.getElementById('editor-project-cover').value,
+      gallery: document.getElementById('editor-project-gallery').value,
+      location: document.getElementById('editor-project-location').value,
+      area: document.getElementById('editor-project-area').value,
+      completionYear: document.getElementById('editor-project-year').value,
+      description: document.getElementById('editor-project-desc').value,
+      constructionType: document.getElementById('editor-project-construction').value
+    };
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Showcase Project';
+        
+        if (response.status === 'success') {
+          showToast(response.message);
+          closeProjectForm();
+          loadServerData();
+        } else {
+          showToast("CRUD transaction failed: " + response.message);
+        }
+      })
+      .withFailureHandler((err) => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Showcase Project';
+        showToast("Network pipeline failure: " + err.toString());
+      })
+      .saveProject(token, payload);
+  }
+
+  function deleteProjectRecord(id) {
+    if (!confirm("Are you sure you want to delete this showcase project portfolio record permanently?")) return;
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          showToast(response.message);
+          loadServerData();
+        } else {
+          showToast("Error: " + response.message);
+        }
+      })
+      .removeProject(token, id);
+  }
+
+  // Tab 4: Render blogs table with editing actions
+  function renderAdminBlogs() {
+    const tbody = document.getElementById('admin-blogs-table');
+    tbody.innerHTML = '';
+    
+    appState.blog.forEach(blog => {
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-black/5 dark:hover:bg-white/5 align-middle border-b border-b-black/5 dark:border-white/5";
+      tr.innerHTML = `
+        <td class="py-3.5 pr-2 font-bold text-dark dark:text-white line-clamp-1 max-w-[150px] sm:max-w-xs">${blog.title}</td>
+        <td class="py-3.5 px-2 text-dark/60 dark:text-white/60">${blog.author}</td>
+        <td class="py-3.5 px-2 text-dark/60 dark:text-white/60 font-semibold text-primary dark:text-accent">${blog.category}</td>
+        <td class="py-3.5 px-2 text-dark/60 dark:text-white/60 font-mono">${blog.date}</td>
+        <td class="py-3.5 pl-2 text-right">
+          <div class="flex items-center justify-end gap-2">
+            <button onclick="openBlogForm(JSON.parse(decodeURIComponent('${encodeURIComponent(JSON.stringify(blog))}')))" class="p-1 text-primary hover:text-accent" title="Edit article">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            </button>
+            <button onclick="deleteBlogRecord('${blog.id}')" class="p-1 text-red-500 hover:text-red-700" title="Delete article">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function openBlogForm(blog) {
+    const modal = document.getElementById('admin-blog-modal');
+    const form = modal.querySelector('form');
+    form.reset();
+    
+    if (blog) {
+      document.getElementById('blog-modal-title').textContent = "Edit Blog Insight";
+      document.getElementById('editor-blog-id').value = blog.id || '';
+      document.getElementById('editor-blog-title').value = blog.title || '';
+      document.getElementById('editor-blog-category').value = blog.category || 'Technical Specs';
+      document.getElementById('editor-blog-image').value = blog.image || '';
+      document.getElementById('editor-blog-excerpt').value = blog.excerpt || '';
+      document.getElementById('editor-blog-author').value = blog.author || '';
+      document.getElementById('editor-blog-content').value = blog.content || '';
+    } else {
+      document.getElementById('blog-modal-title').textContent = "Publish Blog Article";
+      document.getElementById('editor-blog-id').value = '';
+    }
+    
+    modal.classList.remove('hidden');
+  }
+
+  function closeBlogForm() {
+    document.getElementById('admin-blog-modal').classList.add('hidden');
+  }
+
+  function handleBlogSubmit(event) {
+    event.preventDefault();
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    const saveBtn = document.getElementById('blog-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Publishing article details...';
+    
+    const payload = {
+      id: document.getElementById('editor-blog-id').value,
+      title: document.getElementById('editor-blog-title').value,
+      category: document.getElementById('editor-blog-category').value,
+      image: document.getElementById('editor-blog-image').value,
+      excerpt: document.getElementById('editor-blog-excerpt').value,
+      author: document.getElementById('editor-blog-author').value,
+      content: document.getElementById('editor-blog-content').value
+    };
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Publish Insight Article';
+        
+        if (response.status === 'success') {
+          showToast(response.message);
+          closeBlogForm();
+          loadServerData();
+        } else {
+          showToast("CRUD transaction failed: " + response.message);
+        }
+      })
+      .withFailureHandler((err) => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Publish Insight Article';
+        showToast("Network pipeline failure: " + err.toString());
+      })
+      .saveBlog(token, payload);
+  }
+
+  function deleteBlogRecord(id) {
+    if (!confirm("Are you sure you want to delete this technical article insight permanently from Google Sheets?")) return;
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          showToast(response.message);
+          loadServerData();
+        } else {
+          showToast("Error: " + response.message);
+        }
+      })
+      .removeBlog(token, id);
+  }
+
+  // Tab 6: Render Admin audit activity logs table
+  function renderAdminAuditLogs() {
+    const tbody = document.getElementById('admin-logs-table');
+    tbody.innerHTML = '';
+    
+    const logs = appState.adminData.logs || [];
+    if (logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="py-6 text-center text-dark/40 dark:text-white/45">No audit trail logs recorded yet.</td></tr>';
+      return;
+    }
+    
+    logs.forEach(log => {
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/5 dark:border-white/5 font-mono text-[10px]";
+      tr.innerHTML = `
+        <td class="py-2 pr-2 text-dark/50 dark:text-white/50">${log.timestamp}</td>
+        <td class="py-2 px-2 text-primary dark:text-accent font-bold">${log.user}</td>
+        <td class="py-2 px-2"><span class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-dark dark:text-white font-bold uppercase">${log.action}</span></td>
+        <td class="py-2 pl-2 text-dark/70 dark:text-white/60">${log.details}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Google Drive asset base64 uploader helper
+  function uploadModalAsset(type, fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+    
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) {
+      showToast("Verification token missing. Please re-authenticate.");
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64Data = e.target.result;
+      
+      // Select appropriate upload status indicator
+      let saveBtn;
+      if (type === 'product') saveBtn = document.getElementById('product-save-btn');
+      else if (type === 'project') saveBtn = document.getElementById('project-save-btn');
+      else if (type === 'blog') saveBtn = document.getElementById('blog-save-btn');
+      
+      const originalText = saveBtn ? saveBtn.textContent : '';
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Uploading image attachment to Google Drive...";
+      }
+      
+      google.script.run
+        .withSuccessHandler((response) => {
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = originalText;
+          }
+          
+          if (response.status === 'success') {
+            showToast(response.message);
+            // Inject returned CDN direct access URL back into correct form text input
+            if (type === 'product') {
+              document.getElementById('editor-product-image').value = response.url;
+            } else if (type === 'project') {
+              document.getElementById('editor-project-cover').value = response.url;
+            } else if (type === 'blog') {
+              document.getElementById('editor-blog-image').value = response.url;
+            }
+          } else {
+            showToast("Drive Upload Error: " + response.message);
+          }
+        })
+        .withFailureHandler((err) => {
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = originalText;
+          }
+          showToast("Network pipe interrupted during upload: " + err.toString());
+        })
+        .uploadFileToDrive(token, base64Data, file.name);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Backup exporter triggers local JSON downloads
+  function downloadBackupJSON() {
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          // Dynamic browser file download triggers
+          const blob = new Blob([response.data], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          const today = new Date().toISOString().substring(0, 10);
+          
+          link.href = url;
+          link.download = `sdy_sheets_database_backup_${today}.json`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          
+          showToast(response.message);
+        } else {
+          showToast("Export compiled failure: " + response.message);
+        }
+      })
+      .exportDatabaseAsJSON(token);
+  }
+
+  // Backup restore parses JSON uploads and writes sheets
+  function restoreDatabaseFromJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    const confirmRestore = confirm("CRITICAL DISASTER WARNING: You are about to overwrite all sheets in your active Google Sheets database. This action is completely irreversible. Are you absolutely certain you want to proceed with restore?");
+    if (!confirmRestore) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const jsonContent = e.target.result;
+      
+      // Reveal processing overlay
+      const overlay = document.createElement('div');
+      overlay.className = "fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center gap-3 text-white text-xs";
+      overlay.innerHTML = `
+        <div class="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+        <p class="font-bold tracking-widest uppercase">Overwriting Sheets Database tables...</p>
+        <p class="text-white/50 text-[10px]">Processing rollback block, please wait...</p>
+      `;
+      document.body.appendChild(overlay);
+      
+      google.script.run
+        .withSuccessHandler((response) => {
+          document.body.removeChild(overlay);
+          if (response.status === 'success') {
+            alert(response.message);
+            // Refresh main application
+            window.location.reload();
+          } else {
+            showToast("Database rollback aborted: " + response.message);
+          }
+        })
+        .withFailureHandler((err) => {
+          document.body.removeChild(overlay);
+          showToast("Network pipe interrupted: " + err.toString());
+        })
+        .importDatabaseFromJSON(token, jsonContent);
+    };
+    reader.readAsText(file);
+  }
+
+  // Change Admin Security Credentials
+  function handlePasswordChange(event) {
+    event.preventDefault();
+    const token = localStorage.getItem('sdy_admin_token');
+    if (!token) return;
+    
+    const oldPass = document.getElementById('config-old-password').value;
+    const newPass = document.getElementById('config-new-password').value;
+    
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.status === 'success') {
+          showToast(response.message);
+          document.getElementById('password-change-form').reset();
+        } else {
+          showToast("Credentials update error: " + response.message);
+        }
+      })
+      .changeAdminPassword(token, oldPass, newPass);
+  }
+
+
+  // ==================== SYSTEM TOASTS BANNERS ====================
+  function showToast(text) {
+    const toast = document.getElementById('system-toast');
+    const toastText = document.getElementById('system-toast-text');
+    
+    toastText.textContent = text;
+    toast.classList.remove('translate-y-36');
+    toast.classList.add('translate-y-0');
+    
+    setTimeout(() => {
+      toast.classList.remove('translate-y-0');
+      toast.classList.add('translate-y-36');
+    }, 4500);
+  }
+
+  // Back to top floating button trigger
+  function setupScrollMonitoring() {
+    const header = document.getElementById('main-header');
+    const backToTopBtn = document.getElementById('back-to-top-btn');
+    
+    window.addEventListener('scroll', () => {
+      // Header glass sticky scale effect
+      if (window.scrollY > 30) {
+        header.classList.remove('py-4');
+        header.classList.add('py-2.5', 'shadow-lg');
+      } else {
+        header.classList.remove('py-2.5', 'shadow-lg');
+        header.classList.add('py-4');
+      }
+      
+      // Floating button reveal
+      if (window.scrollY > 300) {
+        backToTopBtn.classList.remove('translate-y-24', 'opacity-0');
+        backToTopBtn.classList.add('translate-y-0', 'opacity-100');
+      } else {
+        backToTopBtn.classList.add('translate-y-24', 'opacity-0');
+        backToTopBtn.classList.remove('translate-y-0', 'opacity-100');
+      }
+    });
+  }
+
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>

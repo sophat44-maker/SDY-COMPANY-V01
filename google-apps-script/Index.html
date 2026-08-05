@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><?= companyName ?> | Construction & Interior</title>
+  <?!= include('Style'); ?>
+</head>
+<body class="bg-bg-light text-dark dark:bg-dark dark:text-white transition-colors duration-300">
+
+  <!-- ==================== HEADER NAVIGATION ==================== -->
+  <header id="main-header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 glass-header py-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+      
+      <!-- Logo Branding -->
+      <a href="#" onclick="navigate('home'); return false;" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25 group-hover:scale-105 transition-transform duration-300">
+          <span class="text-white font-extrabold text-lg tracking-wider" id="header-logo-badge"><?= companyLogo ?></span>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-dark dark:text-white tracking-wide group-hover:text-primary dark:group-hover:text-accent transition-colors duration-300" id="header-title-text">
+            <?= companyName ?>
+          </h1>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-primary dark:text-accent font-semibold -mt-1" id="header-subtitle-text">
+            Construction & Interior
+          </p>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Menu -->
+      <nav id="desktop-nav" class="hidden lg:flex items-center gap-1 bg-black/[0.02] dark:bg-white/[0.02] p-1 rounded-full border border-black/[0.04] dark:border-white/[0.04]">
+        <button onclick="navigate('home')" id="nav-home" class="nav-item flex items-center gap-1.5 px-4.5 py-2 rounded-full text-sm font-medium transition-all duration-300">Home</button>
+        <button onclick="navigate('services')" id="nav-services" class="nav-item flex items-center gap-1.5 px-4.5 py-2 rounded-full text-sm font-medium transition-all duration-300">Services</button>
+        <button onclick="navigate('products')" id="nav-products" class="nav-item flex items-center gap-1.5 px-4.5 py-2 rounded-full text-sm font-medium transition-all duration-300">Products</button>
+        <button onclick="navigate('projects')" id="nav-projects" class="nav-item flex items-center gap-1.5 px-4.5 py-2 rounded-full text-sm font-medium transition-all duration-300">Projects</button>
+        <button onclick="navigate('about')" id="nav-about" class="nav-item flex items-center gap-1.5 px-4.5 py-2 rounded-full text-sm font-medium transition-all duration-300">About Us</button>
+        <button onclick="navigate('blog')" id="nav-blog" class="nav-item flex items-center gap-1.5 px-4.5 py-2 rounded-full text-sm font-medium transition-all duration-300">Blog</button>
+        <button onclick="navigate('contact')" id="nav-contact" class="nav-item flex items-center gap-1.5 px-4.5 py-2 rounded-full text-sm font-medium transition-all duration-300">Contact</button>
+      </nav>
+
+      <!-- Action Items (Search, Theme Toggle, Admin, Mobile Toggle) -->
+      <div class="flex items-center gap-2.5">
+        
+        <!-- Header search -->
+        <div class="relative flex items-center">
+          <input type="text" id="header-search-bar" placeholder="Search catalog..." class="w-0 opacity-0 focus:w-48 focus:opacity-100 sm:focus:w-56 px-4 py-1.5 text-xs rounded-full border border-primary/20 bg-white dark:bg-dark text-dark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary shadow-md transition-all duration-300" />
+          <button onclick="toggleSearch()" class="p-2.5 rounded-full text-dark/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 transition-all" aria-label="Search">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </button>
+        </div>
+
+        <!-- Language Selector Dropdown -->
+        <div class="relative inline-block text-left" id="language-selector-wrapper">
+          <button onclick="toggleLangDropdown()" id="lang-btn-current" class="flex items-center gap-1 p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all text-xs font-bold text-dark/80 dark:text-white/80">
+            <span id="current-lang-text">EN</span>
+            <svg class="w-3 h-3 text-dark/50 dark:text-white/50" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          <div id="lang-dropdown" class="hidden absolute right-0 mt-2 w-28 rounded-xl bg-white dark:bg-dark border border-black/5 dark:border-white/10 shadow-lg z-50">
+            <div class="py-1">
+              <button onclick="changeLanguage('km')" class="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/5 text-dark dark:text-white flex items-center justify-between">
+                <span>Khmer</span>
+                <span class="text-[10px] text-dark/40 dark:text-white/40">KM</span>
+              </button>
+              <button onclick="changeLanguage('en')" class="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/5 text-dark dark:text-white flex items-center justify-between">
+                <span>English</span>
+                <span class="text-[10px] text-dark/40 dark:text-white/40">EN</span>
+              </button>
+              <button onclick="changeLanguage('ko')" class="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/5 text-dark dark:text-white flex items-center justify-between">
+                <span>한국어</span>
+                <span class="text-[10px] text-dark/40 dark:text-white/40">KO</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dark Mode Toggle -->
+        <button onclick="toggleTheme()" class="p-2.5 rounded-full text-dark/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 transition-all" aria-label="Theme Mode">
+          <svg id="theme-icon-sun" class="w-5 h-5 text-amber-400 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.46 5.05L5.75 4.343a1 1 0 10-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+          <svg id="theme-icon-moon" class="w-5 h-5 text-dark" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+        </button>
+
+        <!-- Admin Quick Link -->
+        <button onclick="navigate('admin')" id="nav-admin-quick" class="p-2.5 rounded-full text-dark/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 transition-all" title="Admin Portal">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        </button>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button onclick="toggleMobileMenu()" class="p-2.5 lg:hidden rounded-full text-dark/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 transition-all" aria-label="Mobile Navigation Toggle">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Menu -->
+  <div id="mobile-menu" class="fixed inset-0 z-40 bg-dark/40 backdrop-blur-md hidden transition-opacity duration-300">
+    <div class="fixed top-0 bottom-0 right-0 w-4/5 max-w-sm bg-white dark:bg-dark p-8 flex flex-col justify-between shadow-2xl">
+      <div class="space-y-8">
+        <div class="flex items-center justify-between">
+          <span class="font-extrabold text-sm uppercase tracking-wider text-primary dark:text-accent" id="mobile-menu-title">Menu Directory</span>
+          <button onclick="toggleMobileMenu()" class="p-2 text-dark/60 dark:text-white/60 font-bold text-sm">✕</button>
+        </div>
+        <nav class="flex flex-col gap-4 text-base font-bold">
+          <button onclick="navigate('home')" id="mobile-nav-home" class="mobile-nav-item py-2 text-left hover:text-primary dark:hover:text-accent">Home</button>
+          <button onclick="navigate('services')" id="mobile-nav-services" class="mobile-nav-item py-2 text-left hover:text-primary dark:hover:text-accent">Services</button>
+          <button onclick="navigate('products')" id="mobile-nav-products" class="mobile-nav-item py-2 text-left hover:text-primary dark:hover:text-accent">Products</button>
+          <button onclick="navigate('projects')" id="mobile-nav-projects" class="mobile-nav-item py-2 text-left hover:text-primary dark:hover:text-accent">Projects</button>
+          <button onclick="navigate('about')" id="mobile-nav-about" class="mobile-nav-item py-2 text-left hover:text-primary dark:hover:text-accent">About Us</button>
+          <button onclick="navigate('blog')" id="mobile-nav-blog" class="mobile-nav-item py-2 text-left hover:text-primary dark:hover:text-accent">Blog</button>
+          <button onclick="navigate('contact')" id="mobile-nav-contact" class="mobile-nav-item py-2 text-left hover:text-primary dark:hover:text-accent">Contact</button>
+          <button onclick="navigate('admin')" id="mobile-nav-admin" class="mobile-nav-item py-2 text-left hover:text-primary dark:hover:text-accent text-red-500">Admin Panel</button>
+        </nav>
+      </div>
+      <div>
+        <p class="text-xs text-dark/40 dark:text-white/40 uppercase tracking-[0.1em] font-medium" id="mobile-menu-company"><?= companyName ?></p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== MAIN VIEWPORT ==================== -->
+  <main class="pt-[76px]">
+
+    <!-- ==================== 1. HOME VIEW ==================== -->
+    <div id="view-home" class="view-section space-y-24 pb-24">
+      
+      <!-- HERO BANNER -->
+      <section class="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-[#101828]">
+        <div class="absolute inset-0 z-0">
+          <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1920" class="w-full h-full object-cover opacity-35" alt="Premium construction showcase" />
+          <div class="absolute inset-0 bg-gradient-to-tr from-[#101828] via-[#101828]/70 to-transparent"></div>
+        </div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8 py-16">
+          <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full backdrop-blur-md">
+            <svg class="w-4 h-4 text-accent animate-spin-slow" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707"></path></svg>
+            <span class="text-[10px] font-bold tracking-[0.25em] text-white uppercase" id="hero-badge">Premium Construction & Joinery</span>
+          </div>
+          <h2 class="text-4xl sm:text-6xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mx-auto font-display" id="hero-title">
+            High Precision Joinery & Steel Solutions in Cambodia
+          </h2>
+          <p class="text-base sm:text-lg text-white/70 max-w-2xl mx-auto leading-relaxed" id="hero-desc">
+            Operating specialized heavy wood factories and pre-engineered steel mills directly in Phnom Penh to secure turn-key compliance, zero-middleman cost, and pristine luxury fit-outs.
+          </p>
+          <div class="flex flex-wrap justify-center gap-4">
+            <button onclick="navigate('products')" class="px-7 py-4 bg-primary hover:bg-accent text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5" id="hero-btn-products">
+              Explore Products
+            </button>
+            <button onclick="navigate('contact')" class="px-7 py-4 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider rounded-xl backdrop-blur-md transition-all transform hover:-translate-y-0.5" id="hero-btn-contact">
+              Inquire Project
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- CORPORATE PROFILE / INTRO -->
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div class="lg:col-span-7 space-y-6">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary/5 dark:bg-accent/10 rounded-full">
+              <span class="text-[10px] font-bold tracking-[0.2em] text-primary dark:text-accent uppercase" id="intro-badge">Corporate Profile</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-dark dark:text-white tracking-tight leading-tight" id="intro-title">
+              Integrated Engineering & Bespoke Interior Contracting
+            </h2>
+            <p class="text-sm sm:text-base text-dark/60 dark:text-white/60 leading-relaxed" id="intro-desc">
+              At <span class="font-bold text-primary dark:text-accent" id="intro-company-name"><?= companyName ?></span>, we have unified Cambodia’s premium interior design fit-out division with our massive high-precision manufacturing mill. Based in Phnom Penh, we build turn-key commercial renovations, high-durability pre-engineered metal plants, and double-glazed curtain facades under rigorous international quality controls.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div class="flex items-start gap-2.5">
+                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div>
+                  <p class="text-xs font-bold text-dark dark:text-white" id="merit-1-title">Local Fabrication Control</p>
+                  <p class="text-[11px] text-dark/55 dark:text-white/55" id="merit-1-desc">25,000 sqm heavy factory guarantees cost-savings and material traceability.</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div>
+                  <p class="text-xs font-bold text-dark dark:text-white" id="merit-2-title">Compliance Standard Certified</p>
+                  <p class="text-[11px] text-dark/55 dark:text-white/55" id="merit-2-desc">Tested fire stop mechanisms certified up to 120-mins (UL fire code).</p>
+                </div>
+              </div>
+            </div>
+            <button onclick="navigate('about')" class="px-5.5 py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-white text-xs font-bold uppercase tracking-wider shadow-lg hover:scale-[1.02] transition-all" id="intro-btn-history">
+              Learn Our History &rarr;
+            </button>
+          </div>
+          <!-- Right side decorative card grid -->
+          <div class="lg:col-span-5 grid grid-cols-2 gap-4">
+            <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/[0.03] dark:border-white/[0.03] shadow-sm text-center space-y-2 sleek-card">
+              <span class="text-2xl sm:text-3xl font-black text-primary dark:text-accent tracking-tight block">25,000 sqm</span>
+              <p class="text-[10px] font-bold text-dark/50 dark:text-white/50 uppercase tracking-wider">Heavy Production Plant</p>
+            </div>
+            <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/[0.03] dark:border-white/[0.03] shadow-sm text-center space-y-2 sleek-card">
+              <span class="text-2xl sm:text-3xl font-black text-primary dark:text-accent tracking-tight block">450+</span>
+              <p class="text-[10px] font-bold text-dark/50 dark:text-white/50 uppercase tracking-wider">Bespoke Projects</p>
+            </div>
+            <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/[0.03] dark:border-white/[0.03] shadow-sm text-center space-y-2 sleek-card">
+              <span class="text-2xl sm:text-3xl font-black text-primary dark:text-accent tracking-tight block">180+</span>
+              <p class="text-[10px] font-bold text-dark/50 dark:text-white/50 uppercase tracking-wider">Expert Craftsmen</p>
+            </div>
+            <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/[0.03] dark:border-white/[0.03] shadow-sm text-center space-y-2 sleek-card">
+              <span class="text-2xl sm:text-3xl font-black text-primary dark:text-accent tracking-tight block">8+ Years</span>
+              <p class="text-[10px] font-bold text-dark/50 dark:text-white/50 uppercase tracking-wider">Local Mastery</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FABRICATION PROCESS STEPS -->
+      <section class="bg-black/[0.01] dark:bg-white/[0.01] py-16 border-y border-black/[0.02] dark:border-white/[0.02]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          <div class="text-center space-y-2.5">
+            <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block" id="process-badge">Our Process</span>
+            <h3 class="text-2xl sm:text-3xl font-bold tracking-tight text-dark dark:text-white" id="process-title">Seamless Corporate Execution Lifecycle</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 shadow-sm space-y-4 sleek-card">
+              <div class="w-11 h-11 bg-blue-50 dark:bg-blue-950/20 text-accent rounded-xl flex items-center justify-center font-bold">01</div>
+              <h4 class="font-bold text-base text-dark dark:text-white" id="process-step-1-title">Consultation & Design</h4>
+              <p class="text-xs text-dark/60 dark:text-white/60 leading-relaxed" id="process-step-1-desc">Deep structural analysis, architectural concept design, and engineering optimization to finalize materials.</p>
+            </div>
+            <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 shadow-sm space-y-4 sleek-card">
+              <div class="w-11 h-11 bg-blue-50 dark:bg-blue-950/20 text-accent rounded-xl flex items-center justify-center font-bold">02</div>
+              <h4 class="font-bold text-base text-dark dark:text-white" id="process-step-2-title">Factory Fabrication</h4>
+              <p class="text-xs text-dark/60 dark:text-white/60 leading-relaxed" id="process-step-2-desc">High-precision manufacturing in our 25,000 sqm facility using CNC German tooling and lumber seasoning kilns.</p>
+            </div>
+            <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 shadow-sm space-y-4 sleek-card">
+              <div class="w-11 h-11 bg-blue-50 dark:bg-blue-950/20 text-accent rounded-xl flex items-center justify-center font-bold">03</div>
+              <h4 class="font-bold text-base text-dark dark:text-white" id="process-step-3-title">Precision Installation</h4>
+              <p class="text-xs text-dark/60 dark:text-white/60 leading-relaxed" id="process-step-3-desc">Seamless deployment, steel erection, curtain wall facade fitting, and premium joinery installation by certified teams.</p>
+            </div>
+            <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 shadow-sm space-y-4 sleek-card">
+              <div class="w-11 h-11 bg-blue-50 dark:bg-blue-950/20 text-accent rounded-xl flex items-center justify-center font-bold">04</div>
+              <h4 class="font-bold text-base text-dark dark:text-white" id="process-step-4-title">Certified Handover</h4>
+              <p class="text-xs text-dark/60 dark:text-white/60 leading-relaxed" id="process-step-4-desc">Rigorous safety audits, soundproof decibel checks, UL fire compliance approvals, and polished handover.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TESTIMONIALS SECTION -->
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <div class="text-center space-y-2.5">
+          <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block" id="testimonials-badge">Client Testimonials</span>
+          <h3 class="text-2xl sm:text-3xl font-bold tracking-tight text-dark dark:text-white" id="testimonials-title">What Our Partners Say About Our Compliance</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="testimonials-grid-container">
+          <!-- Populated Dynamically -->
+        </div>
+      </section>
+
+    </div>
+
+
+    <!-- ==================== 2. SERVICES VIEW ==================== -->
+    <div id="view-services" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16 fade-in-section">
+      <div class="text-center space-y-3.5">
+        <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block">Our Divisions</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-dark dark:text-white">
+          Certified Contracting Capabilities
+        </h2>
+        <p class="text-xs sm:text-sm text-dark/60 dark:text-white/60 max-w-xl mx-auto leading-relaxed">
+          From architectural design, luxury hotel furniture manufacturing to pre-engineered heavy steel framing, we maintain rigorous structural controls.
+        </p>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="flex flex-wrap justify-center gap-2" id="services-tabs-container">
+        <!-- Generated Dynamically -->
+      </div>
+
+      <!-- Services Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8" id="services-cards-grid">
+        <!-- Generated Dynamically -->
+      </div>
+
+      <!-- Bento Core Merits -->
+      <div class="rounded-3xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 p-8 sm:p-12 shadow-md flex flex-col lg:flex-row items-center justify-between gap-8 sleek-card">
+        <div class="space-y-4 max-w-xl">
+          <h3 class="text-xl sm:text-2xl font-bold text-dark dark:text-white">
+            Guaranteed Technical Standards
+          </h3>
+          <p class="text-xs sm:text-sm text-dark/60 dark:text-white/60 leading-relaxed">
+            Every SDY project undergoes systematic quality checkpoints. Our products are backed by compliance certifications, and structural designs are certified by accredited national engineers.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div class="flex items-center gap-2 text-xs font-semibold text-dark/85 dark:text-white/85">
+              <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              ISO 9001 Structural Rigidity
+            </div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-dark/85 dark:text-white/85">
+              <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              UL Fire Code Compliance
+            </div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-dark/85 dark:text-white/85">
+              <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Sound-proofing Decibel Tests
+            </div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-dark/85 dark:text-white/85">
+              <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Local Materials Traceability
+            </div>
+          </div>
+        </div>
+        <div class="shrink-0">
+          <button onclick="navigate('contact')" class="px-7 py-4 bg-primary hover:bg-accent text-white text-xs sm:text-sm font-bold tracking-wider uppercase rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5">
+            Get Engineering Proposal
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==================== 3. PRODUCTS VIEW ==================== -->
+    <div id="view-products" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 fade-in-section">
+      <div class="text-center space-y-3.5">
+        <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block">Products Catalog</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-dark dark:text-white">
+          Architectural Assemblies & Materials
+        </h2>
+        <p class="text-xs sm:text-sm text-dark/60 dark:text-white/60 max-w-xl mx-auto leading-relaxed">
+          Our specialized divisions manufacture doors, customized furniture, and structural curtain walls matching high safety and acoustic specifications.
+        </p>
+      </div>
+
+      <!-- Filters & Search Bar Layout -->
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-black/5 dark:border-white/5">
+        <!-- Category Filters -->
+        <div class="flex flex-wrap gap-2" id="products-tabs-container">
+          <!-- Dynamic -->
+        </div>
+        <!-- Internal Product Search -->
+        <div class="relative w-full md:w-80">
+          <input type="text" id="product-internal-search" placeholder="Search specifications, materials..." oninput="filterProducts()" class="w-full px-4.5 py-3 pr-10 text-xs rounded-xl bg-white dark:bg-dark text-dark dark:text-white border border-black/5 dark:border-white/5 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" />
+          <svg class="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-dark/40 dark:text-white/45" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8" id="products-grid-container">
+        <!-- Populated Dynamically -->
+      </div>
+    </div>
+
+
+    <!-- ==================== 4. PROJECTS VIEW ==================== -->
+    <div id="view-projects" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 fade-in-section">
+      <div class="text-center space-y-3.5">
+        <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block">Our Projects</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-dark dark:text-white">
+          Inspirational Showcases in Indochina
+        </h2>
+        <p class="text-xs sm:text-sm text-dark/60 dark:text-white/60 max-w-xl mx-auto leading-relaxed">
+          Explore our completed premium projects. From luxury residential villas to multi-story bank headquarters and heavy SEZ industrial facilities.
+        </p>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="flex flex-wrap justify-center gap-2" id="projects-tabs-container">
+        <!-- Dynamic -->
+      </div>
+
+      <!-- Projects Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="projects-grid-container">
+        <!-- Populated Dynamically -->
+      </div>
+    </div>
+
+
+    <!-- ==================== 5. ABOUT VIEW ==================== -->
+    <div id="view-about" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16 fade-in-section">
+      
+      <!-- History and Intro -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div class="lg:col-span-7 space-y-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary/5 dark:bg-accent/10 rounded-full">
+            <span class="text-[10px] font-bold tracking-[0.2em] text-primary dark:text-accent uppercase">Corporate History</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-dark dark:text-white">
+            Architecting Superior Environments with Local Precision
+          </h2>
+          <p class="text-sm sm:text-base text-dark/60 dark:text-white/60 leading-relaxed">
+            Established in Phnom Penh, SDY Company C&I has pioneered high-precision engineering and bespoke interior fit-out contracting. Our unified capability—operating local high-output steel mills and timber joinery plants—allows us to eliminate middle-man costs and deliver flawless quality directly.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="p-5.5 rounded-2xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 space-y-2 sleek-card">
+              <div class="flex items-center gap-2 text-primary dark:text-accent">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <span class="font-bold text-xs uppercase tracking-wider">Our Mission</span>
+              </div>
+              <p class="text-xs text-dark/60 dark:text-white/60 leading-relaxed">
+                To construct safer, sustainable, and highly sophisticated environments using state-of-the-art local manufacturing methods.
+              </p>
+            </div>
+            <div class="p-5.5 rounded-2xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 space-y-2 sleek-card">
+              <div class="flex items-center gap-2 text-primary dark:text-accent">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                <span class="font-bold text-xs uppercase tracking-wider">Our Vision</span>
+              </div>
+              <p class="text-xs text-dark/60 dark:text-white/60 leading-relaxed">
+                To be acknowledged as Indochina's premier luxury fit-out manufacturer, setting global benchmarks in compliance.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="lg:col-span-5 relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
+          <img src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover" alt="Corporate Manufacturing Facility" />
+        </div>
+      </div>
+
+      <!-- Compliance Standards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10 border-t border-black/5 dark:border-white/5">
+        <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/[0.03] dark:border-white/[0.03] text-center space-y-3 sleek-card shadow-sm">
+          <span class="text-3xl font-black text-primary dark:text-accent tracking-tight block">UL</span>
+          <p class="text-xs font-bold text-dark dark:text-white uppercase tracking-wider">Fire Rated Protection</p>
+          <p class="text-[11px] text-dark/50 dark:text-white/50">Full safety fire-stopping doors certified up to 2 hours of insulation.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/[0.03] dark:border-white/[0.03] text-center space-y-3 sleek-card shadow-sm">
+          <span class="text-3xl font-black text-primary dark:text-accent tracking-tight block">ISO</span>
+          <p class="text-xs font-bold text-dark dark:text-white uppercase tracking-wider">9001 Compliance</p>
+          <p class="text-[11px] text-dark/50 dark:text-white/50">Standardized factory execution from material logging to delivery.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/[0.03] dark:border-white/[0.03] text-center space-y-3 sleek-card shadow-sm">
+          <span class="text-2xl font-black text-accent tracking-wide block">Green Council</span>
+          <p class="text-xs font-bold text-dark dark:text-white uppercase tracking-wider">Eco-Friendly Glazing & Timber</p>
+          <p class="text-[11px] text-dark/50 dark:text-white/50">Double-glazed curtain walls reduce heat transmission by 65% in warm seasons.</p>
+        </div>
+      </div>
+
+      <!-- Organizational Chart Hierarchy -->
+      <div class="space-y-10 pt-10 border-t border-black/5 dark:border-white/5 text-center">
+        <div class="space-y-3.5">
+          <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block">Our Hierarchy</span>
+          <h3 class="text-2xl sm:text-3xl font-bold tracking-tight text-dark dark:text-white">SDY Corporate Structure</h3>
+        </div>
+        
+        <div class="space-y-8 max-w-4xl mx-auto">
+          <!-- Board Level -->
+          <div>
+            <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block mb-4">Board & Leadership</span>
+            <div class="flex flex-wrap justify-center gap-6" id="team-board-container">
+              <!-- Dynamic -->
+            </div>
+          </div>
+          
+          <div class="hidden sm:block h-8 w-0.5 bg-primary/15 dark:bg-white/10 mx-auto"></div>
+
+          <!-- Executive Level -->
+          <div>
+            <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block mb-4">Functional Directors</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6" id="team-executive-container">
+              <!-- Dynamic -->
+            </div>
+          </div>
+
+          <div class="hidden sm:block h-8 w-0.5 bg-primary/15 dark:bg-white/10 mx-auto"></div>
+
+          <!-- Technical Division lists -->
+          <div>
+            <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block mb-4">Technical Divisions</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4.5 text-left">
+              <div class="p-5 rounded-xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 sleek-card">
+                <h5 class="font-bold text-xs uppercase tracking-wider text-primary dark:text-accent border-b border-black/5 dark:border-white/5 pb-2.5 mb-3">Wood Joinery</h5>
+                <ul class="space-y-1.5 text-xs text-dark/60 dark:text-white/60">
+                  <li>• Timber seasoning kilns</li>
+                  <li>• CNC profiles milling</li>
+                  <li>• Acoustic cores lamination</li>
+                  <li>• Veneer matching</li>
+                </ul>
+              </div>
+              <div class="p-5 rounded-xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 sleek-card">
+                <h5 class="font-bold text-xs uppercase tracking-wider text-primary dark:text-accent border-b border-black/5 dark:border-white/5 pb-2.5 mb-3">Metalwork & Doors</h5>
+                <ul class="space-y-1.5 text-xs text-dark/60 dark:text-white/60">
+                  <li>• Steel door shearing</li>
+                  <li>• Automated robotic welding</li>
+                  <li>• H-beams pre-fabrication</li>
+                  <li>• Fire seal application</li>
+                </ul>
+              </div>
+              <div class="p-5 rounded-xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 sleek-card">
+                <h5 class="font-bold text-xs uppercase tracking-wider text-primary dark:text-accent border-b border-black/5 dark:border-white/5 pb-2.5 mb-3">Facade Division</h5>
+                <ul class="space-y-1.5 text-xs text-dark/60 dark:text-white/60">
+                  <li>• Double glazing assembly</li>
+                  <li>• Argon gas filling</li>
+                  <li>• Aluminum structural frames</li>
+                  <li>• Structural silicone seal</li>
+                </ul>
+              </div>
+              <div class="p-5 rounded-xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 sleek-card">
+                <h5 class="font-bold text-xs uppercase tracking-wider text-primary dark:text-accent border-b border-black/5 dark:border-white/5 pb-2.5 mb-3">Project Fit-Out</h5>
+                <ul class="space-y-1.5 text-xs text-dark/60 dark:text-white/60">
+                  <li>• Drywall partitions</li>
+                  <li>• Integrated cabling</li>
+                  <li>• High-lumen lighting installation</li>
+                  <li>• Quality audits check</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==================== 6. BLOG VIEW ==================== -->
+    <div id="view-blog" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 fade-in-section">
+      <div class="text-center space-y-3.5">
+        <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block">Editorial Hub</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-dark dark:text-white">
+          Insights & Technical Standards
+        </h2>
+        <p class="text-xs sm:text-sm text-dark/60 dark:text-white/60 max-w-xl mx-auto leading-relaxed">
+          Stay informed about safety codes, acoustic control solutions, and corporate architectural trends in Southeast Asia.
+        </p>
+      </div>
+
+      <!-- Blog Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="blog-grid-container">
+        <!-- Dynamic -->
+      </div>
+    </div>
+
+
+    <!-- ==================== 7. CONTACT VIEW ==================== -->
+    <div id="view-contact" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16 fade-in-section">
+      <div class="text-center space-y-3.5">
+        <span class="text-[10px] uppercase tracking-widest text-primary dark:text-accent font-extrabold block">Connect With Us</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-dark dark:text-white">
+          Initiate Engineering Proposals
+        </h2>
+        <p class="text-xs sm:text-sm text-dark/60 dark:text-white/60 max-w-xl mx-auto leading-relaxed">
+          Request bespoke furniture pricing, wood seasoning data, or schedule site evaluations directly with our technical division.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        
+        <!-- Contact Information Cards -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="p-6 rounded-2xl bg-white dark:bg-dark border border-black/5 dark:border-white/5 space-y-4 shadow-sm sleek-card">
+            <h4 class="font-bold text-lg text-dark dark:text-white border-b border-black/5 dark:border-white/10 pb-3">Phnom Penh Headquarters</h4>
+            <div class="space-y-3 text-xs text-dark/75 dark:text-white/70 leading-relaxed">
+              <p class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span id="contact-company-address"><?= companyAddress ?></span>
+              </p>
+              <p class="flex items-center gap-2.5">
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.98-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                <span id="contact-company-phone"><?= companyPhone ?></span>
+              </p>
+              <p class="flex items-center gap-2.5">
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <span id="contact-company-email"><?= companyEmail ?></span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Telegram Quick Actions Link -->
+          <div class="grid grid-cols-2 gap-4">
+            <a id="telegram-link" href="https://t.me/sdy_ci" target="_blank" class="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-center flex flex-col items-center gap-2 border border-blue-500/10 hover:bg-blue-500 hover:text-white group transition-all duration-300">
+              <span class="text-xs font-bold uppercase tracking-wider">Telegram Channel</span>
+              <span class="text-[10px] text-blue-500 group-hover:text-white font-medium">Join Group</span>
+            </a>
+            <a id="whatsapp-link" href="https://wa.me/85512777888" target="_blank" class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-center flex flex-col items-center gap-2 border border-emerald-500/10 hover:bg-emerald-500 hover:text-white group transition-all duration-300">
+              <span class="text-xs font-bold uppercase tracking-wider">WhatsApp chat</span>
+              <span class="text-[10px] text-emerald-500 group-hover:text-white font-medium">Connect Live</span>
+            </a>
+          </div>
+
+          <!-- Responsive Map Embed Panel -->
+          <div class="rounded-2xl overflow-hidden shadow-md aspect-video border border-black/5 dark:border-white/5 bg-black/10">
+            <iframe id="google-maps-iframe" src="" class="w-full h-full" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+        </div>
+
+        <!-- Contact Entry Form -->
+        <div class="lg:col-span-7 bg-white dark:bg-dark p-6 sm:p-8 rounded-3xl shadow-xl border border-black/5 dark:border-white/5 space-y-6">
+          <h4 class="font-bold text-lg text-dark dark:text-white border-b border-black/5 dark:border-white/10 pb-3">Submit Specifications</h4>
+          
+          <form id="contact-inquiry-form" onsubmit="submitContactForm(event)" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Full Name</label>
+                <input type="text" id="form-name" required class="w-full px-4.5 py-3 text-xs rounded-xl bg-bg-light dark:bg-[#101828] text-dark dark:text-white border border-black/5 dark:border-white/5 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Mr. Sophat" />
+              </div>
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Company Name</label>
+                <input type="text" id="form-company" class="w-full px-4.5 py-3 text-xs rounded-xl bg-bg-light dark:bg-[#101828] text-dark dark:text-white border border-black/5 dark:border-white/5 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Corporate Corp" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Phone Number</label>
+                <input type="tel" id="form-phone" required class="w-full px-4.5 py-3 text-xs rounded-xl bg-bg-light dark:bg-[#101828] text-dark dark:text-white border border-black/5 dark:border-white/5 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="+855 12 345 678" />
+              </div>
+              <div class="space-y-1">
+                <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Email Address</label>
+                <input type="email" id="form-email" required class="w-full px-4.5 py-3 text-xs rounded-xl bg-bg-light dark:bg-[#101828] text-dark dark:text-white border border-black/5 dark:border-white/5 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="client@vattanac.com" />
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Inquiry Subject Area</label>
+              <select id="form-subject" class="w-full px-4.5 py-3 text-xs rounded-xl bg-bg-light dark:bg-[#101828] text-dark dark:text-white border border-black/5 dark:border-white/5 focus:outline-none focus:ring-2 focus:ring-primary">
+                <option value="Interior Fit-Out Estimate">Interior Fit-Out Estimate</option>
+                <option value="Wood Joinery Pricing">Wood Joinery Pricing</option>
+                <option value="Steel Frame Engineering">Steel Frame Engineering</option>
+                <option value="Curtain Wall Facade">Curtain Wall Facade</option>
+                <option value="General Corporate Support">General Corporate Support</option>
+              </select>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Message Details</label>
+              <textarea id="form-message" rows="5" required class="w-full px-4.5 py-3 text-xs rounded-xl bg-bg-light dark:bg-[#101828] text-dark dark:text-white border border-black/5 dark:border-white/5 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Please describe sizing requirements, soundproof tolerances, or steel grades needed..."></textarea>
+            </div>
+
+            <button type="submit" id="form-submit-btn" class="w-full flex items-center justify-center gap-2 px-5 py-4 bg-primary hover:bg-accent text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg transition-all">
+              Submit Spec Proposals
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ==================== 8. ADMIN VIEW ==================== -->
+    <div id="view-admin" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 fade-in-section">
+      
+      <!-- ==================== ADMIN AUTHENTICATION LOCK SCREEN ==================== -->
+      <div id="admin-login-panel" class="max-w-md mx-auto bg-white dark:bg-dark border border-black/5 dark:border-white/5 p-8 sm:p-10 rounded-3xl shadow-2xl space-y-6">
+        <div class="text-center space-y-2">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-white font-extrabold text-lg mx-auto shadow-md" id="login-logo-badge">
+            <?= companyLogo ?>
+          </div>
+          <h3 class="text-xl font-bold text-dark dark:text-white font-display">Console Authentication</h3>
+          <p class="text-xs text-dark/50 dark:text-white/50">Enter password to synchronize and manage corporate worksheets securely.</p>
+        </div>
+        <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Security Password</label>
+            <input type="password" id="admin-login-password" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 dark:border-white/10 text-dark dark:text-white text-xs focus:ring-1 focus:ring-primary focus:outline-none" />
+          </div>
+          <button type="submit" id="admin-login-btn" class="w-full py-3 bg-primary hover:bg-accent text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all">
+            Unlock Dashboard
+          </button>
+        </form>
+      </div>
+
+      <!-- ==================== THE REAL-TIME DASHBOARD PANEL (HIDDEN BY DEFAULT) ==================== -->
+      <div id="admin-dashboard-panel" class="hidden space-y-12">
+        
+        <!-- Dashboard Header with Admin Logged-In Controls -->
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-black/5 dark:border-white/10">
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 text-primary dark:text-accent">
+              <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              <span class="text-[10px] font-bold tracking-[0.25em] uppercase">Secure Corporate Admin Console</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-dark dark:text-white tracking-tight">
+              Enterprise Dashboard
+            </h2>
+            <p class="text-xs sm:text-sm text-dark/55 dark:text-white/55">Perform real-time multi-table CRUD and analyze visitor inquiries, products, projects, blogs, and settings.</p>
+          </div>
+          <div class="flex gap-3">
+            <button onclick="handleAdminLogout()" class="px-4 py-2.5 rounded-xl border border-black/5 dark:border-white/10 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 uppercase tracking-wider transition-colors">
+              Log Out
+            </button>
+          </div>
+        </div>
+
+        <!-- Premium Bento Grid Statistics Rows -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div class="p-5 bg-white dark:bg-dark border border-black/5 dark:border-white/5 rounded-2xl shadow-sm space-y-1">
+            <span class="text-2xl sm:text-3xl font-extrabold text-primary dark:text-accent block" id="stat-total-leads">0</span>
+            <span class="text-[10px] font-bold text-dark/45 dark:text-white/45 uppercase tracking-wider block">Total Inquiries</span>
+          </div>
+          <div class="p-5 bg-white dark:bg-dark border border-black/5 dark:border-white/5 rounded-2xl shadow-sm space-y-1">
+            <span class="text-2xl sm:text-3xl font-extrabold text-primary dark:text-accent block" id="stat-pending-leads">0</span>
+            <span class="text-[10px] font-bold text-dark/45 dark:text-white/45 uppercase tracking-wider block">Pending Leads</span>
+          </div>
+          <div class="p-5 bg-white dark:bg-dark border border-black/5 dark:border-white/5 rounded-2xl shadow-sm space-y-1">
+            <span class="text-2xl sm:text-3xl font-extrabold text-primary dark:text-accent block" id="stat-total-quotes">0</span>
+            <span class="text-[10px] font-bold text-dark/45 dark:text-white/45 uppercase tracking-wider block">Spec Quotations</span>
+          </div>
+          <div class="p-5 bg-white dark:bg-dark border border-black/5 dark:border-white/5 rounded-2xl shadow-sm space-y-1">
+            <span class="text-2xl sm:text-3xl font-extrabold text-primary dark:text-accent block" id="stat-products-count">0</span>
+            <span class="text-[10px] font-bold text-dark/45 dark:text-white/45 uppercase tracking-wider block">Products Registered</span>
+          </div>
+        </div>
+
+        <!-- Analytical Charts Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-50 dark:bg-[#101828]/20 p-6 rounded-3xl border border-black/5 dark:border-white/5">
+          <div class="space-y-4">
+            <h4 class="text-xs font-bold text-dark/70 dark:text-white/70 uppercase tracking-wider">Product Categories Share</h4>
+            <div id="chart-product-categories" class="space-y-2.5">
+              <!-- Dynamically populated custom progress bars -->
+            </div>
+          </div>
+          <div class="space-y-4">
+            <h4 class="text-xs font-bold text-dark/70 dark:text-white/70 uppercase tracking-wider">Monthly Inbound Leads Trend</h4>
+            <div class="flex items-end justify-between h-32 pt-4 border-b border-black/10 dark:border-white/15 px-2" id="chart-leads-trend">
+              <!-- Dynamically populated custom column bar charts -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Layout Panels with Left Navigation -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          <!-- Left Sidebar menu options -->
+          <div class="lg:col-span-3 space-y-1.5 bg-bg-light dark:bg-dark border border-black/5 dark:border-white/15 p-4 rounded-2xl">
+            <span class="text-[9px] font-extrabold text-dark/40 dark:text-white/40 uppercase tracking-widest block mb-2 px-2">Worksheets CRUD</span>
+            <button onclick="setAdminTab('messages')" id="admin-tab-messages" class="admin-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold tracking-wide uppercase transition-all bg-primary text-white shadow-lg">
+              ✉ Inquiries Inbox
+            </button>
+            <button onclick="setAdminTab('quotations')" id="admin-tab-quotations" class="admin-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold tracking-wide uppercase transition-all text-dark/75 dark:text-white/70 hover:bg-primary/5">
+              📊 Spec Quotes
+            </button>
+            <button onclick="setAdminTab('products')" id="admin-tab-products" class="admin-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold tracking-wide uppercase transition-all text-dark/75 dark:text-white/70 hover:bg-primary/5">
+              📦 Product catalog
+            </button>
+            <button onclick="setAdminTab('projects')" id="admin-tab-projects" class="admin-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold tracking-wide uppercase transition-all text-dark/75 dark:text-white/70 hover:bg-primary/5">
+              🏢 Projects Portfolio
+            </button>
+            <button onclick="setAdminTab('blogs')" id="admin-tab-blogs" class="admin-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold tracking-wide uppercase transition-all text-dark/75 dark:text-white/70 hover:bg-primary/5">
+              ✏ Technical Blogs
+            </button>
+            <span class="text-[9px] font-extrabold text-dark/40 dark:text-white/40 uppercase tracking-widest block mt-4 mb-2 px-2">Configuration</span>
+            <button onclick="setAdminTab('company')" id="admin-tab-company" class="admin-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold tracking-wide uppercase transition-all text-dark/75 dark:text-white/70 hover:bg-primary/5">
+              ⚙ Corporate Settings
+            </button>
+            <button onclick="setAdminTab('logs')" id="admin-tab-logs" class="admin-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold tracking-wide uppercase transition-all text-dark/75 dark:text-white/70 hover:bg-primary/5">
+              📜 Audit Traces
+            </button>
+            <button onclick="setAdminTab('security')" id="admin-tab-security" class="admin-tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold tracking-wide uppercase transition-all text-dark/75 dark:text-white/70 hover:bg-primary/5 text-accent font-black">
+              🛡 Backup & Access
+            </button>
+          </div>
+
+          <!-- Right panel worksheet workspace -->
+          <div class="lg:col-span-9 bg-white dark:bg-dark border border-black/5 dark:border-white/5 p-6 sm:p-8 rounded-3xl shadow-xl min-h-[500px]">
+            
+            <!-- PANEL 1: INBOUND INQUIRIES -->
+            <div id="admin-panel-messages" class="admin-panel space-y-6">
+              <div class="flex justify-between items-center pb-4 border-b border-black/5 dark:border-white/5">
+                <h3 class="font-bold text-lg text-dark dark:text-white">Visitor Inquiries Logs</h3>
+                <span class="text-[9px] bg-green-100 text-green-700 dark:bg-green-950/20 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider">Sheet Synchronized</span>
+              </div>
+              <div class="space-y-4" id="admin-messages-list">
+                <p class="text-xs text-dark/40 dark:text-white/40 text-center py-12">Loading inquiries...</p>
+              </div>
+            </div>
+
+            <!-- PANEL 2: INBOUND QUOTATIONS -->
+            <div id="admin-panel-quotations" class="admin-panel hidden space-y-6">
+              <div class="flex justify-between items-center pb-4 border-b border-black/5 dark:border-white/5">
+                <h3 class="font-bold text-lg text-dark dark:text-white">Client Specification Quotes</h3>
+                <span class="text-[9px] bg-blue-100 text-blue-700 dark:bg-blue-950/20 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider">Sheet Synchronized</span>
+              </div>
+              <div class="space-y-4" id="admin-quotations-list">
+                <p class="text-xs text-dark/40 dark:text-white/40 text-center py-12">No quotation files compiled yet.</p>
+              </div>
+            </div>
+
+            <!-- PANEL 3: PRODUCTS CATALOG -->
+            <div id="admin-panel-products" class="admin-panel hidden space-y-6">
+              <div class="flex justify-between items-center pb-4 border-b border-black/5 dark:border-white/5">
+                <h3 class="font-bold text-lg text-dark dark:text-white">Active Product Registries</h3>
+                <button onclick="openProductForm()" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-accent text-white text-[10px] font-bold uppercase tracking-wider shadow-md">
+                  + Add Product Record
+                </button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="border-b border-black/10 dark:border-white/10 text-dark/50 dark:text-white/50 uppercase font-bold text-[9px] tracking-wider">
+                      <th class="py-2.5">Name</th>
+                      <th class="py-2.5">Category</th>
+                      <th class="py-2.5">Key Materials</th>
+                      <th class="py-2.5">Dimensions</th>
+                      <th class="py-2.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-black/5 dark:divide-white/5" id="admin-products-table">
+                    <!-- Dynamic -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- PANEL 4: PROJECTS PORTFOLIO -->
+            <div id="admin-panel-projects" class="admin-panel hidden space-y-6">
+              <div class="flex justify-between items-center pb-4 border-b border-black/5 dark:border-white/5">
+                <h3 class="font-bold text-lg text-dark dark:text-white">Active Projects Showcase</h3>
+                <button onclick="openProjectForm()" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-accent text-white text-[10px] font-bold uppercase tracking-wider shadow-md">
+                  + Add Project Portfolio
+                </button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="border-b border-black/10 dark:border-white/10 text-dark/50 dark:text-white/50 uppercase font-bold text-[9px] tracking-wider">
+                      <th class="py-2.5">Title</th>
+                      <th class="py-2.5">Location</th>
+                      <th class="py-2.5">Surface Area</th>
+                      <th class="py-2.5">Year</th>
+                      <th class="py-2.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-black/5 dark:divide-white/5" id="admin-projects-table">
+                    <!-- Dynamic -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- PANEL 5: TECHNICAL BLOG ARTICLES -->
+            <div id="admin-panel-blogs" class="admin-panel hidden space-y-6">
+              <div class="flex justify-between items-center pb-4 border-b border-black/5 dark:border-white/5">
+                <h3 class="font-bold text-lg text-dark dark:text-white">Technical Insights Articles</h3>
+                <button onclick="openBlogForm()" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-accent text-white text-[10px] font-bold uppercase tracking-wider shadow-md">
+                  + Add Blog Post
+                </button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="border-b border-black/10 dark:border-white/10 text-dark/50 dark:text-white/50 uppercase font-bold text-[9px] tracking-wider">
+                      <th class="py-2.5">Title</th>
+                      <th class="py-2.5">Author</th>
+                      <th class="py-2.5">Category</th>
+                      <th class="py-2.5">Date</th>
+                      <th class="py-2.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-black/5 dark:divide-white/5" id="admin-blogs-table">
+                    <!-- Dynamic -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- PANEL 6: COMPANY SETTINGS EDIT -->
+            <div id="admin-panel-company" class="admin-panel hidden space-y-6">
+              <div class="flex justify-between items-center pb-4 border-b border-black/5 dark:border-white/5">
+                <h3 class="font-bold text-lg text-dark dark:text-white">Dynamic Profile Configuration</h3>
+                <span class="text-[10px] bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md font-bold uppercase">CompanyInfo Worksheet</span>
+              </div>
+              <form id="company-profile-config-form" onsubmit="saveProfileSettings(event)" class="space-y-4 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Company Branding Name</label>
+                    <input type="text" id="config-company-name" required class="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white focus:outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Logo Badge Abbreviation</label>
+                    <input type="text" id="config-company-logo" required class="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white focus:outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Phone Number</label>
+                    <input type="text" id="config-phone" required class="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white focus:outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Email Contact Address</label>
+                    <input type="email" id="config-email" required class="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white focus:outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Office Head Address</label>
+                  <input type="text" id="config-address" required class="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white focus:outline-none focus:ring-1 focus:ring-primary" />
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Google Maps Embed Location URL</label>
+                  <input type="url" id="config-maps" required class="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white focus:outline-none focus:ring-1 focus:ring-primary" />
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">Telegram Link URL</label>
+                    <input type="url" id="config-telegram" class="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white focus:outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase tracking-wider block">WhatsApp Direct Link URL</label>
+                    <input type="url" id="config-whatsapp" class="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white focus:outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                </div>
+                <button type="submit" class="px-5 py-3 bg-primary hover:bg-accent text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-colors">
+                  Apply Company Changes
+                </button>
+              </form>
+            </div>
+
+            <!-- PANEL 7: AUDIT LOGS -->
+            <div id="admin-panel-logs" class="admin-panel hidden space-y-6">
+              <div class="flex justify-between items-center pb-4 border-b border-black/5 dark:border-white/5">
+                <h3 class="font-bold text-lg text-dark dark:text-white">Operational Activity Traces</h3>
+                <span class="text-[9px] bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md font-bold uppercase block">Log Events</span>
+              </div>
+              <div class="overflow-x-auto max-h-[450px]">
+                <table class="w-full text-left border-collapse text-[11px] font-mono">
+                  <thead>
+                    <tr class="border-b border-black/10 dark:border-white/10 text-dark/50 dark:text-white/50 uppercase font-bold tracking-wider text-[9px]">
+                      <th class="py-2">Timestamp</th>
+                      <th class="py-2">User</th>
+                      <th class="py-2">Action</th>
+                      <th class="py-2">Trace Details</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-black/5 dark:divide-white/5" id="admin-logs-table">
+                    <!-- Dynamic -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- PANEL 8: SECURITY, ACCESS & BACKUPS -->
+            <div id="admin-panel-security" class="admin-panel hidden space-y-10">
+              
+              <!-- Backup Form -->
+              <div class="space-y-4">
+                <h3 class="font-bold text-base text-dark dark:text-white border-b border-black/5 pb-2">Full Database Backups</h3>
+                <p class="text-xs text-dark/60 dark:text-white/60 leading-relaxed">Download a single consolidated JSON archive of your entire Google Sheet database structure. You can restore your data back to this point at any time.</p>
+                <div class="flex flex-wrap gap-4 pt-2">
+                  <button onclick="downloadBackupJSON()" class="px-5 py-3 bg-green-600 hover:bg-green-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md">
+                    📥 Download JSON Database Export
+                  </button>
+                  <label class="px-5 py-3 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 cursor-pointer text-dark dark:text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-sm border border-black/10 flex items-center gap-2">
+                    📤 Upload Restore file (.json)
+                    <input type="file" accept=".json" onchange="restoreDatabaseFromJSON(event)" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Password Changer Form -->
+              <div class="space-y-4 pt-4 border-t border-black/5">
+                <h3 class="font-bold text-base text-dark dark:text-white border-b border-black/5 pb-2">Admin Security Key</h3>
+                <form id="password-change-form" onsubmit="handlePasswordChange(event)" class="space-y-4 max-w-md text-xs">
+                  <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-dark/55 dark:text-white/50 uppercase tracking-wider block">Current Password</label>
+                    <input type="password" id="config-old-password" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white focus:outline-none" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-dark/55 dark:text-white/50 uppercase tracking-wider block">New Security Password</label>
+                    <input type="password" id="config-new-password" required placeholder="Minimum 4 characters" class="w-full px-4 py-2.5 rounded-xl bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white focus:outline-none" />
+                  </div>
+                  <button type="submit" class="px-5 py-3 bg-primary hover:bg-accent text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md">
+                    Apply Security Credentials
+                  </button>
+                </form>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+
+  <!-- ==================== CORPORATE FOOTER ==================== -->
+  <footer class="bg-dark text-white/80 py-12 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div class="space-y-4">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center font-bold text-sm text-white" id="footer-logo-badge"><?= companyLogo ?></div>
+          <span class="font-extrabold text-sm text-white tracking-wide" id="footer-company-name"><?= companyName ?></span>
+        </div>
+        <p class="text-xs text-white/50 leading-relaxed">
+          Integrated turnkey engineering and architectural joinery compliance across Southeast Asian premium developments.
+        </p>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-4">Divisions</h4>
+        <nav class="flex flex-col gap-2 text-xs">
+          <a href="#" onclick="navigate('services'); return false;" class="hover:text-accent">Interior Fit-Out</a>
+          <a href="#" onclick="navigate('services'); return false;" class="hover:text-accent">Acoustic Wood Doors</a>
+          <a href="#" onclick="navigate('services'); return false;" class="hover:text-accent">Steel Structure Manufacturing</a>
+          <a href="#" onclick="navigate('services'); return false;" class="hover:text-accent">Facade Glazing Curtain Wall</a>
+        </nav>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-4">Directories</h4>
+        <nav class="flex flex-col gap-2 text-xs">
+          <a href="#" onclick="navigate('about'); return false;" class="hover:text-accent">History & Board Members</a>
+          <a href="#" onclick="navigate('products'); return false;" class="hover:text-accent">Material Catalog</a>
+          <a href="#" onclick="navigate('projects'); return false;" class="hover:text-accent">Indochina Portfolio</a>
+          <a href="#" onclick="navigate('blog'); return false;" class="hover:text-accent">Technical Blog Hub</a>
+        </nav>
+      </div>
+      <div class="space-y-4">
+        <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-4">Inbound Access</h4>
+        <p class="text-xs text-white/50 leading-relaxed" id="footer-office-hours">Monday - Saturday: 8:00 AM - 5:00 PM</p>
+        <button onclick="navigate('contact')" class="w-full py-2.5 bg-primary hover:bg-accent text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors">
+          Contact Division
+        </button>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between text-[11px] text-white/40">
+      <p id="footer-copyright">&copy; 2026 <?= companyName ?> C&I. All rights reserved.</p>
+      <div class="flex gap-4">
+        <span>ISO 9001:2015</span>
+        <span>UL Standards Tested</span>
+        <span>Cambodia Green Council</span>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ==================== DIALOG DETAIL MODALS ==================== -->
+
+  <!-- 1. PRODUCT DETAIL DIALOG OVERLAY -->
+  <div id="product-detail-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden transition-opacity duration-300">
+    <div class="bg-white dark:bg-dark max-w-2xl w-full rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row border border-black/5 dark:border-white/5">
+      <div class="relative w-full md:w-1/2 aspect-square md:aspect-auto bg-black/5">
+        <img id="modal-product-img" src="" class="w-full h-full object-cover" alt="" />
+      </div>
+      <div class="p-6 md:p-8 w-full md:w-1/2 flex flex-col justify-between space-y-6">
+        <div class="space-y-4.5">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-1 bg-primary/10 text-primary dark:text-accent text-[9px] font-bold uppercase tracking-wider rounded-md" id="modal-product-category">Category</span>
+            <button onclick="closeProductModal()" class="p-1 hover:text-red-500 font-bold text-xs">✕</button>
+          </div>
+          <h3 class="text-lg md:text-xl font-bold text-dark dark:text-white" id="modal-product-name">Product Name</h3>
+          <p class="text-xs text-dark/60 dark:text-white/60 leading-relaxed" id="modal-product-desc">Product Description details go here.</p>
+          <div class="space-y-1.5 pt-2 border-t border-black/5 dark:border-white/10 text-[11px]">
+            <p><strong class="uppercase text-dark/45 dark:text-white/40 tracking-wider">Specifications:</strong> <span id="modal-product-spec">No specs</span></p>
+            <p><strong class="uppercase text-dark/45 dark:text-white/40 tracking-wider">Materials:</strong> <span id="modal-product-material">No materials</span></p>
+            <p><strong class="uppercase text-dark/45 dark:text-white/40 tracking-wider">Dimensions:</strong> <span id="modal-product-size">No sizes</span></p>
+          </div>
+        </div>
+        <button onclick="navigate('contact'); closeProductModal();" class="w-full py-3 bg-primary hover:bg-accent text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all">
+          Inquire This Product
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. PROJECT PORTFOLIO MODAL DIALOG OVERLAY -->
+  <div id="project-detail-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden transition-opacity duration-300">
+    <div class="bg-white dark:bg-dark max-w-3xl w-full rounded-3xl overflow-hidden shadow-2xl border border-black/5 dark:border-white/5 max-h-[90vh] flex flex-col">
+      <div class="relative aspect-video bg-black/10 shrink-0">
+        <img id="modal-project-img" src="" class="w-full h-full object-cover" alt="" />
+        <button onclick="closeProjectModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center text-sm font-bold z-10">✕</button>
+        <span class="absolute top-4 left-4 px-3 py-1 bg-primary text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-md" id="modal-project-category">Category</span>
+      </div>
+      <div class="p-6 sm:p-8 overflow-y-auto space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-black/5 dark:border-white/10 pb-4">
+          <div>
+            <h3 class="text-xl sm:text-2xl font-bold text-dark dark:text-white" id="modal-project-title">Project Title</h3>
+            <p class="text-xs text-primary dark:text-accent font-semibold uppercase tracking-wider mt-1" id="modal-project-type">Construction Type</p>
+          </div>
+          <div class="flex gap-3 text-center text-xs">
+            <div class="px-3.5 py-1.5 bg-bg-light dark:bg-[#101828] rounded-xl border border-black/5">
+              <span class="font-bold text-dark dark:text-white block" id="modal-project-area">Area</span>
+              <span class="text-[9px] uppercase tracking-wider text-dark/45 dark:text-white/45 font-medium">Surface</span>
+            </div>
+            <div class="px-3.5 py-1.5 bg-bg-light dark:bg-[#101828] rounded-xl border border-black/5">
+              <span class="font-bold text-dark dark:text-white block" id="modal-project-year">Year</span>
+              <span class="text-[9px] uppercase tracking-wider text-dark/45 dark:text-white/45 font-medium">Completed</span>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-4">
+          <p class="text-xs sm:text-sm text-dark/70 dark:text-white/70 leading-relaxed" id="modal-project-desc">Project details copy.</p>
+          <p class="text-[11px] font-semibold text-dark/50 dark:text-white/40 flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            Location: <span id="modal-project-location">Location details</span>
+          </p>
+        </div>
+        <!-- Mapped multi-image gallery scroll -->
+        <div class="space-y-3">
+          <span class="text-[10px] uppercase tracking-widest text-dark/45 dark:text-white/45 font-extrabold block">Project Showcase Assets</span>
+          <div class="grid grid-cols-3 gap-3" id="modal-project-gallery">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. BLOG POST DETAILED DIALOG OVERLAY -->
+  <div id="blog-detail-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden transition-opacity duration-300">
+    <div class="bg-white dark:bg-dark max-w-2xl w-full rounded-3xl overflow-hidden shadow-2xl border border-black/5 dark:border-white/5 max-h-[90vh] flex flex-col">
+      <div class="relative aspect-[16/9] bg-black/10 shrink-0">
+        <img id="modal-blog-img" src="" class="w-full h-full object-cover" alt="" />
+        <button onclick="closeBlogModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center text-sm font-bold z-10">✕</button>
+        <span class="absolute top-4 left-4 px-2.5 py-1 bg-primary text-white text-[9px] font-bold uppercase tracking-wider rounded-lg shadow-md" id="modal-blog-category">Category</span>
+      </div>
+      <div class="p-6 sm:p-8 overflow-y-auto space-y-4">
+        <div class="space-y-1.5 border-b border-black/5 dark:border-white/10 pb-4">
+          <span class="text-[10px] text-dark/40 dark:text-white/40" id="modal-blog-date">Date</span>
+          <h3 class="text-xl sm:text-2xl font-bold text-dark dark:text-white" id="modal-blog-title font-display">Blog post title</h3>
+          <p class="text-[10px] uppercase font-bold text-primary dark:text-accent tracking-wider" id="modal-blog-author">By Vannak Heng</p>
+        </div>
+        <div class="text-xs sm:text-sm text-dark/75 dark:text-white/70 leading-relaxed whitespace-pre-wrap p-1" id="modal-blog-content">
+          Content details.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ENTERPRISE ADMIN EDITOR MODALS ==================== -->
+
+  <!-- 1. PRODUCT EDITOR MODAL -->
+  <div id="admin-product-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-dark max-w-xl w-full rounded-3xl overflow-hidden shadow-2xl border border-black/5 dark:border-white/5 max-h-[90vh] flex flex-col">
+      <div class="p-6 border-b border-black/5 dark:border-white/10 flex justify-between items-center shrink-0">
+        <h3 class="text-base font-bold text-dark dark:text-white" id="product-modal-title">Create Product Record</h3>
+        <button onclick="closeProductForm()" class="text-xs font-bold p-1 hover:text-red-500">✕</button>
+      </div>
+      <form onsubmit="handleProductSubmit(event)" class="p-6 overflow-y-auto space-y-4 text-xs">
+        <input type="hidden" id="editor-product-id" />
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Product Name</label>
+            <input type="text" id="editor-product-name" required class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Category Line</label>
+            <select id="editor-product-category" required class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white">
+              <option value="Interior Design">Interior Design</option>
+              <option value="Acoustic Doors">Acoustic Doors</option>
+              <option value="Furniture">Furniture</option>
+              <option value="Steel Works">Steel Works</option>
+              <option value="Glass Works">Glass Works</option>
+              <option value="Aluminum Works">Aluminum Works</option>
+              <option value="Construction">Construction</option>
+            </select>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Product Image Link</label>
+          <div class="flex gap-2">
+            <input type="text" id="editor-product-image" required placeholder="https://..." class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+            <label class="px-4 py-2 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 cursor-pointer text-dark dark:text-white font-bold rounded-lg shrink-0 flex items-center border border-black/10">
+              📁 Drive Upload
+              <input type="file" accept="image/*" onchange="uploadModalAsset('product', this)" class="hidden" />
+            </label>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Product Gallery (Comma Separated)</label>
+          <input type="text" id="editor-product-gallery" placeholder="https://url1, https://url2" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Short Description</label>
+          <textarea id="editor-product-desc" required rows="3" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white"></textarea>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Specification</label>
+            <input type="text" id="editor-product-spec" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Material Core</label>
+            <input type="text" id="editor-product-material" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Standard Size</label>
+            <input type="text" id="editor-product-size" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">PDF Catalog link</label>
+          <input type="text" id="editor-product-pdf" placeholder="#" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+        </div>
+        <button type="submit" id="product-save-btn" class="w-full py-3 bg-primary hover:bg-accent text-white font-bold uppercase rounded-xl shadow-md transition-all">
+          Save Product Registry
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. PROJECT EDITOR MODAL -->
+  <div id="admin-project-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-dark max-w-xl w-full rounded-3xl overflow-hidden shadow-2xl border border-black/5 dark:border-white/5 max-h-[90vh] flex flex-col">
+      <div class="p-6 border-b border-black/5 dark:border-white/10 flex justify-between items-center shrink-0">
+        <h3 class="text-base font-bold text-dark dark:text-white" id="project-modal-title">Create Project Showcase</h3>
+        <button onclick="closeProjectForm()" class="text-xs font-bold p-1 hover:text-red-500">✕</button>
+      </div>
+      <form onsubmit="handleProjectSubmit(event)" class="p-6 overflow-y-auto space-y-4 text-xs">
+        <input type="hidden" id="editor-project-id" />
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Project Title</label>
+            <input type="text" id="editor-project-title" required class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Category Area</label>
+            <select id="editor-project-category" required class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white">
+              <option value="Interior Design">Interior Design</option>
+              <option value="Fit-Out">Fit-Out</option>
+              <option value="Furniture">Furniture</option>
+              <option value="Door">Door</option>
+              <option value="Construction">Construction</option>
+              <option value="Steel Works">Steel Works</option>
+              <option value="Glass Works">Glass Works</option>
+              <option value="Aluminum Works">Aluminum Works</option>
+            </select>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Cover Image Link</label>
+          <div class="flex gap-2">
+            <input type="text" id="editor-project-cover" required placeholder="https://..." class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+            <label class="px-4 py-2 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 cursor-pointer text-dark dark:text-white font-bold rounded-lg shrink-0 flex items-center border border-black/10">
+              📁 Drive Upload
+              <input type="file" accept="image/*" onchange="uploadModalAsset('project', this)" class="hidden" />
+            </label>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Showcase Gallery (Comma Separated)</label>
+          <input type="text" id="editor-project-gallery" placeholder="https://url1, https://url2" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Location</label>
+            <input type="text" id="editor-project-location" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Surface Area</label>
+            <input type="text" id="editor-project-area" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Completion Year</label>
+            <input type="text" id="editor-project-year" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Project Technical Description</label>
+          <textarea id="editor-project-desc" required rows="3" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white"></textarea>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Construction Type</label>
+          <input type="text" id="editor-project-construction" placeholder="Turnkey EPC Contracting" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+        </div>
+        <button type="submit" id="project-save-btn" class="w-full py-3 bg-primary hover:bg-accent text-white font-bold uppercase rounded-xl shadow-md transition-all">
+          Save Showcase Project
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. BLOG EDITOR MODAL -->
+  <div id="admin-blog-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-dark max-w-xl w-full rounded-3xl overflow-hidden shadow-2xl border border-black/5 dark:border-white/5 max-h-[90vh] flex flex-col">
+      <div class="p-6 border-b border-black/5 dark:border-white/10 flex justify-between items-center shrink-0">
+        <h3 class="text-base font-bold text-dark dark:text-white" id="blog-modal-title">Create Blog Insight</h3>
+        <button onclick="closeBlogForm()" class="text-xs font-bold p-1 hover:text-red-500">✕</button>
+      </div>
+      <form onsubmit="handleBlogSubmit(event)" class="p-6 overflow-y-auto space-y-4 text-xs">
+        <input type="hidden" id="editor-blog-id" />
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Article Title</label>
+            <input type="text" id="editor-blog-title" required class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase">Insight Category</label>
+            <select id="editor-blog-category" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white">
+              <option value="Technical Specs">Technical Specs</option>
+              <option value="Corporate Insights">Corporate Insights</option>
+              <option value="Engineering Standards">Engineering Standards</option>
+              <option value="Green Architecture">Green Architecture</option>
+              <option value="Construction Trends">Construction Trends</option>
+            </select>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Featured Image Link</label>
+          <div class="flex gap-2">
+            <input type="text" id="editor-blog-image" required placeholder="https://..." class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+            <label class="px-4 py-2 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 cursor-pointer text-dark dark:text-white font-bold rounded-lg shrink-0 flex items-center border border-black/10">
+              📁 Drive Upload
+              <input type="file" accept="image/*" onchange="uploadModalAsset('blog', this)" class="hidden" />
+            </label>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Short Excerpt</label>
+          <input type="text" id="editor-blog-excerpt" required placeholder="A brief hook text for summary cards..." class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Author Designation</label>
+          <input type="text" id="editor-blog-author" placeholder="Corporate Estimating Division" class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-bold text-dark/60 dark:text-white/60 uppercase block">Full Article Content</label>
+          <textarea id="editor-blog-content" required rows="6" placeholder="Write full specifications content or markdown text here..." class="w-full px-3 py-2 rounded-lg bg-bg-light dark:bg-[#101828] border border-black/5 text-dark dark:text-white"></textarea>
+        </div>
+        <button type="submit" id="blog-save-btn" class="w-full py-3 bg-primary hover:bg-accent text-white font-bold uppercase rounded-xl shadow-md transition-all">
+          Publish Insight Article
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- FLOATING ACTION ITEMS -->
+  <button id="back-to-top-btn" onclick="scrollToTop()" class="fixed bottom-6 right-6 z-40 p-3 rounded-full bg-primary hover:bg-accent text-white shadow-xl translate-y-24 opacity-0 transition-all duration-500" aria-label="Scroll to top">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+  </button>
+
+  <!-- Dynamic Toast Banner -->
+  <div id="system-toast" class="fixed bottom-6 left-6 z-50 p-4 rounded-xl bg-primary text-white text-xs font-bold uppercase tracking-widest shadow-2xl flex items-center gap-2.5 transition-transform duration-500 translate-y-36">
+    <svg class="w-4 h-4 text-green-300" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <span id="system-toast-text">Success message details!</span>
+  </div>
+
+  <!-- Server Loading Splash Overlay -->
+  <div id="splash-loader" class="fixed inset-0 z-50 bg-bg-light dark:bg-dark flex flex-col items-center justify-center gap-4 transition-all duration-500">
+    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center animate-bounce shadow-lg shadow-primary/25">
+      <span class="text-white font-extrabold text-lg tracking-wider"><?= companyLogo ?></span>
+    </div>
+    <div class="space-y-1 text-center">
+      <h3 class="text-sm font-bold uppercase tracking-[0.25em] text-primary dark:text-accent"><?= companyName ?></h3>
+      <p class="text-[10px] text-dark/40 dark:text-white/45 font-medium animate-pulse">Synchronizing database sheets...</p>
+    </div>
+  </div>
+
+  <?!= include('Script'); ?>
+</body>
+</html>
