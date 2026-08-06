@@ -35,15 +35,39 @@ const LanguageContext = createContext<LanguageContextProps | undefined>(undefine
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
   const [translations, setTranslations] = useState<Record<string, Record<Language, string>>>({});
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [projects, setProjects] = useState<Project[]>(PROJECTS);
-  const [blogs, setBlogs] = useState<BlogPost[]>(BLOG_POSTS);
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const saved = localStorage.getItem('sdy_local_products');
+      if (saved !== null) return JSON.parse(saved);
+    } catch (e) {}
+    return PRODUCTS;
+  });
+  const [projects, setProjects] = useState<Project[]>(() => {
+    try {
+      const saved = localStorage.getItem('sdy_local_projects');
+      if (saved !== null) return JSON.parse(saved);
+    } catch (e) {}
+    return PROJECTS;
+  });
+  const [blogs, setBlogs] = useState<BlogPost[]>(() => {
+    try {
+      const saved = localStorage.getItem('sdy_local_blogs');
+      if (saved !== null) return JSON.parse(saved);
+    } catch (e) {}
+    return BLOG_POSTS;
+  });
   const [services, setServices] = useState<Service[]>(SERVICES);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [heroBanners, setHeroBanners] = useState<HeroBannerItem[]>([]);
   const [partners, setPartners] = useState<PartnerItem[]>([]);
   const [branches, setBranches] = useState<BranchItem[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('sdy_local_categories');
+      if (saved !== null) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
   const [translationsList, setTranslationsList] = useState<TranslationRow[]>([]);
   const [companyInfo, setCompanyInfo] = useState<any>(null);
   const [careers, setCareers] = useState<CareerItem[]>([]);
@@ -93,22 +117,25 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           // Categories
           if (sheetData.categories && sheetData.categories.length > 0) {
             setCategories(sheetData.categories);
+            localStorage.setItem('sdy_local_categories', JSON.stringify(sheetData.categories));
           }
 
           // Products
           if (sheetData.products && sheetData.products.length > 0) {
             setProducts(sheetData.products);
-            window.dispatchEvent(new Event('sdy_products_updated'));
+            localStorage.setItem('sdy_local_products', JSON.stringify(sheetData.products));
           }
 
           // Projects
           if (sheetData.projects && sheetData.projects.length > 0) {
             setProjects(sheetData.projects);
+            localStorage.setItem('sdy_local_projects', JSON.stringify(sheetData.projects));
           }
 
           // Blogs
           if (sheetData.blogs && sheetData.blogs.length > 0) {
             setBlogs(sheetData.blogs);
+            localStorage.setItem('sdy_local_blogs', JSON.stringify(sheetData.blogs));
           }
 
           // Services
@@ -243,11 +270,30 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('sdy_selected_language', detected);
     }
 
+    const loadLocalDatasets = () => {
+      try {
+        const savedProds = localStorage.getItem('sdy_local_products');
+        if (savedProds !== null) setProducts(JSON.parse(savedProds));
+
+        const savedProjs = localStorage.getItem('sdy_local_projects');
+        if (savedProjs !== null) setProjects(JSON.parse(savedProjs));
+
+        const savedBlogs = localStorage.getItem('sdy_local_blogs');
+        if (savedBlogs !== null) setBlogs(JSON.parse(savedBlogs));
+
+        const savedCats = localStorage.getItem('sdy_local_categories');
+        if (savedCats !== null) setCategories(JSON.parse(savedCats));
+      } catch (e) {
+        console.warn('Error reading local datasets:', e);
+      }
+    };
+
     // Initial dynamic load
     fetchDynamicTranslations();
 
     // Listen for config updates and model updates across the app
     const handleConfigUpdate = () => {
+      loadLocalDatasets();
       fetchDynamicTranslations();
     };
 
@@ -258,6 +304,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('sdy_products_updated', handleConfigUpdate);
     window.addEventListener('sdy_projects_updated', handleConfigUpdate);
     window.addEventListener('sdy_blogs_updated', handleConfigUpdate);
+    window.addEventListener('sdy_categories_updated', handleConfigUpdate);
     return () => {
       window.removeEventListener('sdy_config_updated', handleConfigUpdate);
       window.removeEventListener('sdy_global_db_updated', handleConfigUpdate);
@@ -266,6 +313,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('sdy_products_updated', handleConfigUpdate);
       window.removeEventListener('sdy_projects_updated', handleConfigUpdate);
       window.removeEventListener('sdy_blogs_updated', handleConfigUpdate);
+      window.removeEventListener('sdy_categories_updated', handleConfigUpdate);
     };
   }, []);
 

@@ -557,7 +557,7 @@ export async function fetchMultiSheetDataFromAppsScript(webhookUrl: string): Pro
   }
 
   // Attempt 3: Fallback tab-by-tab readTable for core sheets
-  const coreTables = ['Products', 'Projects', 'Blog', 'Categories', 'ContactMessages', 'CompanyInfo', 'Translations', 'Quotations', 'BOQs', 'DeliveryNotes'];
+  const coreTables = ['Products', 'Projects', 'DoorAndFurnitureOrders', 'Blog', 'Categories', 'ContactMessages', 'CompanyInfo', 'Translations', 'Quotations', 'BOQs', 'DeliveryNotes'];
   const aggregatedData: Record<string, any> = {};
 
   await Promise.all(coreTables.map(async (table) => {

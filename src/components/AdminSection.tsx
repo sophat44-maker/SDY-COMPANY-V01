@@ -6,10 +6,11 @@ import {
   Save, FileText, Image as ImageIcon, Loader2, ArrowRight, RefreshCw, Download, History,
   X, ShieldCheck, Code2, Truck, ShoppingBag, Lock, Home, Wrench, Building2, MessageSquare
 } from 'lucide-react';
-import { Product, Project, BlogPost, ContactMessage, AdminConfig, EntitySchema, PageSectionConfig } from '../types';
+import { Product, Project, BlogPost, ContactMessage, AdminConfig, EntitySchema, PageSectionConfig, formatDriveUrl } from '../types';
 import { ConcreteOrder } from '../services/concreteOrderService';
 import { PRODUCTS, PROJECTS, BLOG_POSTS } from '../data';
 import { useLanguage } from './LanguageContext';
+import { transformGoogleDriveUrl, extractGoogleDriveFileId, getGoogleDriveViewUrl } from '../utils/googleDrive';
 import { generateProductPdf } from '../utils/pdfGenerator';
 import DynamicEntityBuilder, { PRESET_SCHEMAS } from './DynamicEntityBuilder';
 import DynamicEntityManager from './DynamicEntityManager';
@@ -930,6 +931,7 @@ export default function AdminSection() {
   const SHEETS_LIST = [
     { name: 'Products', idKey: 'ProductID' },
     { name: 'Projects', idKey: 'ProjectID' },
+    { name: 'DoorAndFurnitureOrders', idKey: 'id' },
     { name: 'Blog', idKey: 'BlogID' },
     { name: 'CompanyInfo', idKey: 'Key' },
     { name: 'ContactMessages', idKey: 'id' },
@@ -1292,6 +1294,20 @@ export default function AdminSection() {
   const handlePreviewPdf = async (product: Product) => {
     try {
       showToast("Generating preview...");
+      const directPdf = product.pdf_spec_url || product.pdfUrl;
+      if (directPdf && directPdf !== '#' && directPdf.trim()) {
+        const rawUrl = directPdf.trim();
+        const driveFileId = extractGoogleDriveFileId(rawUrl);
+        if (driveFileId) {
+          const viewUrl = getGoogleDriveViewUrl(rawUrl);
+          window.open(viewUrl, '_blank', 'noopener,noreferrer');
+          return;
+        }
+        if (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:') || rawUrl.endsWith('.pdf')) {
+          window.open(rawUrl, '_blank', 'noopener,noreferrer');
+          return;
+        }
+      }
       const doc = await generateProductPdf(product, 'en', false);
       const pdfBlob = doc.output('blob');
       const blobUrl = URL.createObjectURL(pdfBlob);
@@ -1304,7 +1320,30 @@ export default function AdminSection() {
 
   const handleDownloadPdfDirect = async (product: Product) => {
     try {
-      showToast("Downloading PDF...");
+      showToast("Generating & Downloading PDF Specification...");
+      const directPdf = product.pdf_spec_url || product.pdfUrl;
+      if (directPdf && directPdf !== '#' && directPdf.trim()) {
+        const cleanUrl = directPdf.trim().toLowerCase();
+        if (cleanUrl.endsWith('.pdf') && !cleanUrl.includes('drive.google.com') && !cleanUrl.includes('lh3.googleusercontent.com')) {
+          try {
+            const res = await fetch(directPdf);
+            if (res.ok) {
+              const blob = await res.blob();
+              const blobUrl = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = blobUrl;
+              link.download = `SDY_${(product.name || 'Product').replace(/\s+/g, '_')}_Specification.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+              return;
+            }
+          } catch (e) {
+            console.warn('Direct PDF fetch failed:', e);
+          }
+        }
+      }
       await generateProductPdf(product, 'en', true);
     } catch (err) {
       console.error(err);
@@ -1513,6 +1552,7 @@ export default function AdminSection() {
         nextProductsList = [payload, ...currentProducts];
       }
       setProductsList(nextProductsList);
+      localStorage.setItem('sdy_local_products', JSON.stringify(nextProductsList));
       window.dispatchEvent(new Event('sdy_products_updated'));
 
       // Direct Google Sheet sync if active
@@ -1738,6 +1778,7 @@ export default function AdminSection() {
 
     const updatedProducts = productsList.filter(p => p.id !== id);
     setProductsList(updatedProducts);
+    localStorage.setItem('sdy_local_products', JSON.stringify(updatedProducts));
     window.dispatchEvent(new Event('sdy_products_updated'));
 
     if (googleToken && activeSpreadsheetId) {
@@ -1833,6 +1874,7 @@ export default function AdminSection() {
         nextProjectsList = [payload, ...currentProjects];
       }
       setProjectsList(nextProjectsList);
+      localStorage.setItem('sdy_local_projects', JSON.stringify(nextProjectsList));
       window.dispatchEvent(new Event('sdy_projects_updated'));
 
       // 2. Direct Google Sheet sync if connected
@@ -1916,6 +1958,7 @@ export default function AdminSection() {
     try {
       const updatedProjects = projectsList.filter(p => p.id !== id);
       setProjectsList(updatedProjects);
+      localStorage.setItem('sdy_local_projects', JSON.stringify(updatedProjects));
       window.dispatchEvent(new Event('sdy_projects_updated'));
 
       if (googleToken && activeSpreadsheetId) {
@@ -2024,6 +2067,7 @@ export default function AdminSection() {
         nextBlogsList = [payload, ...currentBlogs];
       }
       setBlogsList(nextBlogsList);
+      localStorage.setItem('sdy_local_blogs', JSON.stringify(nextBlogsList));
       window.dispatchEvent(new Event('sdy_blogs_updated'));
 
       if (googleToken && activeSpreadsheetId) {
@@ -2106,6 +2150,7 @@ export default function AdminSection() {
     try {
       const updatedBlogs = blogsList.filter(b => b.id !== id);
       setBlogsList(updatedBlogs);
+      localStorage.setItem('sdy_local_blogs', JSON.stringify(updatedBlogs));
       window.dispatchEvent(new Event('sdy_blogs_updated'));
 
       if (googleToken && activeSpreadsheetId) {
@@ -2165,6 +2210,8 @@ export default function AdminSection() {
         nextCats = [payload, ...currentCats];
       }
       setCategoriesList(nextCats);
+      localStorage.setItem('sdy_local_categories', JSON.stringify(nextCats));
+      window.dispatchEvent(new Event('sdy_categories_updated'));
 
       if (googleToken && activeSpreadsheetId) {
         try {
@@ -2215,6 +2262,8 @@ export default function AdminSection() {
     try {
       const updatedCats = categoriesList.filter(c => c.id !== id);
       setCategoriesList(updatedCats);
+      localStorage.setItem('sdy_local_categories', JSON.stringify(updatedCats));
+      window.dispatchEvent(new Event('sdy_categories_updated'));
 
       if (googleToken && activeSpreadsheetId) {
         try {
@@ -3510,9 +3559,19 @@ function saveContactMessage(msg) {
                           </div>
 
                           <button
-                            onClick={() => {
+                            onClick={async () => {
+                              if (!confirm('តើអ្នកពិតជាចង់លុបប័ណ្ណបញ្ជាទិញនេះមែនទេ?')) return;
                               const updated = concreteOrdersList.filter(o => o.id !== ord.id);
                               setConcreteOrdersList(updated);
+                              localStorage.setItem('sdy_concrete_orders', JSON.stringify(updated));
+                              showToast('លុបប័ណ្ណបញ្ជាទិញបានជោគជ័យ');
+                              if (sheetsConfig.googleSheetsWebhookUrl && sheetsConfig.isSyncEnabled) {
+                                await executeSheetsAction('deleteRecord', {
+                                  sheetName: 'DoorAndFurnitureOrders',
+                                  idKey: 'id',
+                                  idValue: ord.id
+                                });
+                              }
                             }}
                             className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors"
                             title="Delete order record"
@@ -4074,7 +4133,7 @@ function saveContactMessage(msg) {
                             <tr key={prod.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                               <td className="px-4 py-3.5 font-semibold text-[#101828] dark:text-white">
                                 <div className="flex items-center gap-3">
-                                  <img src={prod.image} alt={prod.name} className="w-9 h-9 object-cover rounded-lg shadow-sm" referrerPolicy="no-referrer" />
+                                  <img src={prod.image || null} alt={prod.name} className="w-9 h-9 object-cover rounded-lg shadow-sm" referrerPolicy="no-referrer" />
                                   <div className="flex flex-col">
                                     <span className="font-bold text-sm sm:text-base">{prod.name}</span>
                                     <span className="text-xs text-slate-400 uppercase tracking-wider font-mono">{prod.id}</span>
@@ -4094,18 +4153,33 @@ function saveContactMessage(msg) {
                               <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300 text-sm sm:text-base">{prod.size}</td>
                               <td className="py-3">
                                 <div className="flex flex-col gap-0.5">
-                                  {prod.pdfUrl && prod.pdfUrl !== '#' ? (
+                                  {prod.pdfUrl && prod.pdfUrl !== '#' && prod.pdfUrl.trim() !== '' ? (
                                     <a
-                                      href={prod.pdfUrl}
+                                      href={getGoogleDriveViewUrl(prod.pdfUrl) || prod.pdfUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 text-xs text-[#0A4DA3] dark:text-[#1E88E5] font-bold hover:underline"
+                                      onClick={(e) => {
+                                        const cleanUrl = (prod.pdfUrl || '').trim();
+                                        if (!cleanUrl || cleanUrl === '#' || cleanUrl === '/') {
+                                          e.preventDefault();
+                                          handlePreviewPdf(prod);
+                                        }
+                                      }}
+                                      className="inline-flex items-center gap-1 text-xs text-[#0A4DA3] dark:text-[#1E88E5] font-bold hover:underline cursor-pointer"
                                     >
                                       <FileText className="w-3.5 h-3.5" />
                                       <span>View PDF</span>
                                     </a>
                                   ) : (
-                                    <span className="inline-block text-[8px] bg-amber-500/15 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide w-max">Unlinked</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handlePreviewPdf(prod)}
+                                      className="inline-flex items-center gap-1 text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 hover:bg-amber-500/25 transition-colors rounded font-bold uppercase tracking-wide w-max cursor-pointer"
+                                      title="Click to generate and view PDF specification"
+                                    >
+                                      <FileText className="w-2.5 h-2.5" />
+                                      <span>View PDF</span>
+                                    </button>
                                   )}
                                   
                                   {prod.pdfVersions && prod.pdfVersions.length > 0 && (
@@ -4617,7 +4691,7 @@ function saveContactMessage(msg) {
                             <tr key={proj.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                               <td className="px-4 py-3.5 font-semibold text-[#101828] dark:text-white">
                                 <div className="flex items-center gap-3">
-                                  <img src={proj.coverImage} alt={proj.title} className="w-9 h-9 object-cover rounded-lg shadow-sm" referrerPolicy="no-referrer" />
+                                  <img src={proj.coverImage || null} alt={proj.title} className="w-9 h-9 object-cover rounded-lg shadow-sm" referrerPolicy="no-referrer" />
                                   <span className="font-bold text-sm sm:text-base">{proj.title}</span>
                                 </div>
                               </td>
@@ -4999,7 +5073,7 @@ function saveContactMessage(msg) {
                             <tr key={blog.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                               <td className="px-4 py-3.5 font-semibold text-[#101828] dark:text-white">
                                 <div className="flex items-center gap-3">
-                                  <img src={blog.image} alt={blog.title} className="w-9 h-9 object-cover rounded-lg shadow-sm" referrerPolicy="no-referrer" />
+                                  <img src={blog.image || null} alt={blog.title} className="w-9 h-9 object-cover rounded-lg shadow-sm" referrerPolicy="no-referrer" />
                                   <span className="font-bold text-sm sm:text-base truncate max-w-[280px]">{blog.title}</span>
                                 </div>
                               </td>
@@ -5137,7 +5211,7 @@ function saveContactMessage(msg) {
                         <p className="text-[10px] text-black/50 dark:text-white/50 mb-1 font-bold">Logo Preview</p>
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border border-black/10 shadow-sm flex items-center justify-center">
                           <img
-                            src={companyInfo.LogoUrl || localStorage.getItem('sdy_custom_logo') || '/src/assets/images/sdy_official_logo_v2_1784772926599.jpg'}
+                            src={companyInfo?.LogoUrl || localStorage.getItem('sdy_custom_logo') || '/src/assets/images/sdy_official_logo_v2_1784772926599.jpg'}
                             alt="Logo Preview"
                             referrerPolicy="no-referrer"
                             className="w-full h-full object-cover"
@@ -5647,7 +5721,7 @@ function saveContactMessage(msg) {
                     ) : (
                       <div className="flex items-center gap-3 bg-white dark:bg-[#101828] p-2 rounded-xl border border-black/10 dark:border-white/10">
                         {googleUser.photoURL ? (
-                          <img src={googleUser.photoURL} alt={googleUser.displayName || 'User'} className="w-8 h-8 rounded-full" />
+                          <img src={googleUser.photoURL || null} alt={googleUser.displayName || 'User'} className="w-8 h-8 rounded-full" />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-[#0A4DA3] text-white flex items-center justify-center text-xs font-bold">
                             {googleUser.email?.[0].toUpperCase()}

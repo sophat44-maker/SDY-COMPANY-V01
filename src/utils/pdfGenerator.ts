@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
-import { Product } from '../types';
+import { Product, formatDriveUrl } from '../types';
+import { transformGoogleDriveUrl } from './googleDrive';
 import sdyLogoImg from '../assets/images/sdy_official_logo_v2_1784772926599.jpg';
 
 // Luxury Brand Color Palette
@@ -240,6 +241,38 @@ export function generateRoundedProductImage(url: string, width = 600, height = 4
       resolve('');
     };
     img.src = url;
+  });
+}
+
+export function loadImageAsBase64(url: string | null | undefined): Promise<{ base64: string; aspect: number } | null> {
+  return new Promise((resolve) => {
+    if (!url || url === '#' || !url.trim()) return resolve(null);
+    const formattedUrl = transformGoogleDriveUrl(url) || formatDriveUrl(url) || url;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const w = img.naturalWidth || img.width || 800;
+        const h = img.naturalHeight || img.height || 600;
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0);
+          const aspect = w / h;
+          resolve({ base64: canvas.toDataURL('image/jpeg', 0.95), aspect });
+          return;
+        }
+      } catch (e) {
+        console.warn('Canvas conversion error in loadImageAsBase64:', e);
+      }
+      resolve(null);
+    };
+    img.onerror = () => resolve(null);
+    img.src = formattedUrl;
   });
 }
 
@@ -549,273 +582,741 @@ function sanitizePdfText(text: string | undefined | null, fallback: string): str
 export async function generateProductPdf(product: Product, lang: 'en' | 'km' | 'ko' = 'en', download = true): Promise<jsPDF> {
   const langText = TEXT_MAPS[lang] || TEXT_MAPS.en;
 
-  // Initialize jsPDF doc: A4 Portrait, dimensions in mm (210 x 297)
+  // Initialize jsPDF doc: A4 Landscape, dimensions in mm (297 x 210)
   const doc = new jsPDF({
-    orientation: 'portrait',
+    orientation: 'landscape',
     unit: 'mm',
     format: 'a4'
   });
 
-  const pageW = 210;
-  const pageH = 297;
-  const marginL = 15; // 15mm margin
-  const marginR = 15;
-  const marginT = 15;
-  const marginB = 15;
-  const contentW = pageW - marginL - marginR; // 180mm width
+  const pageW = 297;
+  const pageH = 210;
+  const marginL = 12;
+  const marginR = 12;
+  const marginT = 10;
+  const marginB = 10;
+  const contentW = pageW - marginL - marginR; // 273mm
 
-  // Clean English name and description for standard jsPDF Helvetica rendering
   const rawProductName = product.ProductName_EN || product.name || 'SDY Architectural Product';
   const rawProductDesc = product.Description_EN || product.description || 'Bespoke design engineered with timeless aesthetic values and state-of-the-art durability.';
 
   const productName = sanitizePdfText(rawProductName, 'SDY ARCHITECTURAL SYSTEM');
   const productDesc = sanitizePdfText(rawProductDesc, 'Bespoke architectural engineering system crafted for superior structural performance and aesthetic excellence.');
 
-  // Dynamic subtitle category matching
   let collectionSubtitle = 'PREMIUM ARCHITECTURAL OPENINGS & JOINERY';
   if (product.category === 'Doors') collectionSubtitle = 'PREMIUM ARCHITECTURAL OPENINGS & DOOR SYSTEMS';
   else if (product.category === 'Furniture') collectionSubtitle = 'BESPOKE ARTISAN EXECUTIVE FURNITURE';
   else if (product.category === 'Steel') collectionSubtitle = 'ENGINEERED ARCHITECTURAL STEEL SYSTEM';
   else if (product.category === 'Glass') collectionSubtitle = 'HIGH-PERFORMANCE ACOUSTIC GLASS PARTITION';
 
-  // ========================== SINGLE PAGE SPECIFICATION SHEET ===========================
-  let curY = marginT;
+  // Load uploaded technical drawing / spec sheet image if present
+  const rawSpecUrl = product.pdf_spec_url || product.pdfUrl || product.technicalDrawing || product.dimensionDrawing;
+  const specImgData = await loadImageAsBase64(rawSpecUrl);
 
-  // 1. HEADER ZONE
-  let logoH = 20;
-  let logoW = 22;
-  let textX = marginL + 25;
+  const totalPages = specImgData && specImgData.base64 ? 2 : 1;
 
-  try {
-    const logoData = await generateSdyLogoData();
-    if (logoData && logoData.base64) {
-      logoH = 20;
-      logoW = Math.min(Math.max(logoH * logoData.aspect, 16), 40);
-      textX = marginL + logoW + 4;
-      doc.addImage(logoData.base64, 'PNG', marginL, curY, logoW, logoH, 'logo_p1', 'MEDIUM');
+  // =========================================================================
+  // PAGE 1: ARCHITECTURAL BLUEPRINT DRAWING SHEET (If specImgData exists)
+  // OR LANDSCAPE EXECUTIVE SPECIFICATION SHEET (If specImgData is missing)
+  // =========================================================================
+
+  if (specImgData && specImgData.base64) {
+    // -----------------------------------------------------------------------
+    // PAGE 1 (HAS SPEC SHEET): LANDSCAPE ARCHITECTURAL BLUEPRINT SHEET
+    // -----------------------------------------------------------------------
+    let curY = marginT;
+
+    // Header
+    let logoH = 15;
+    let logoW = 18;
+    let textX = marginL + 22;
+
+    try {
+      const logoData = await generateSdyLogoData();
+      if (logoData && logoData.base64) {
+        doc.addImage(logoData.base64, 'PNG', marginL, curY, logoW, logoH, 'logo_p1', 'MEDIUM');
+      }
+    } catch (err) {
+      console.warn('Failed to load logo asset:', err);
     }
-  } catch (err) {
-    console.warn('Failed to load primary logo asset:', err);
-  }
 
-  // Top Center Header Brand Title
-  doc.setTextColor(COLOR_DARK_NAVY);
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.text('SDY COMPANY C&I', textX, curY + 4.2);
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text('SDY COMPANY C&I', textX, curY + 4);
 
-  doc.setTextColor(COLOR_TEXT_MUTED);
-  doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(6.5);
-  doc.text(langText.brandSubtitle, textX, curY + 8.8);
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.text('TECHNICAL SPECIFICATION & ARCHITECTURAL DRAWING SHEET', textX, curY + 8.5);
 
-  // Top Right metadata block
-  doc.setTextColor(COLOR_DARK_NAVY);
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(7.5);
-  doc.text(`CODE: SDY-${product.id.toUpperCase()}`, pageW - marginR, curY + 4.2, { align: 'right' });
+    doc.setTextColor(COLOR_GOLD);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text(`PROJECT / SPEC: ${productName.toUpperCase()}`, pageW - marginR, curY + 4, { align: 'right' });
 
-  doc.setTextColor(COLOR_GOLD);
-  doc.text(`COLLECTION: ${product.category.toUpperCase()}`, pageW - marginR, curY + 8, { align: 'right' });
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.text(`CODE: SDY-${product.id.toUpperCase()} | ISO 9001:2026`, pageW - marginR, curY + 8.5, { align: 'right' });
 
-  doc.setTextColor(COLOR_TEXT_MUTED);
-  doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(6);
-  doc.text(`SPEC SHEET / ISO 9001:2026`, pageW - marginR, curY + 12, { align: 'right' });
-
-  curY += 20;
-  doc.setDrawColor(COLOR_GOLD);
-  doc.setLineWidth(0.4);
-  doc.line(marginL, curY, pageW - marginR, curY);
-
-  // 2. PRODUCT TITLE & COLLECTION SUBTITLE
-  curY += 7;
-  doc.setTextColor(COLOR_DARK_NAVY);
-  doc.setFont('Helvetica', 'bold');
-
-  const titleFontSize = productName.length > 30 ? 14 : 17;
-  doc.setFontSize(titleFontSize);
-
-  const formattedTitle = productName.toUpperCase();
-  const splitTitle = doc.splitTextToSize(formattedTitle, contentW);
-  doc.text(splitTitle, marginL, curY);
-
-  curY += (splitTitle.length * 5.5);
-
-  doc.setTextColor(COLOR_GOLD);
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.text(collectionSubtitle.toUpperCase(), marginL, curY);
-
-  // 3. HERO AREA (Left: Hero Image 92mm x 62mm, Right: 6 Spec Cards 82mm x 62mm)
-  curY += 6;
-  const heroImageW = 92;
-  const heroImageH = 62;
-  const rightPanelX = marginL + heroImageW + 6; // 15 + 92 + 6 = 113mm
-  const rightPanelW = contentW - heroImageW - 6; // 82mm
-
-  let imageLoadedSuccess = false;
-  try {
-    const roundedHeroBase64 = await generateRoundedProductImage(product.image, 500, 360);
-    if (roundedHeroBase64) {
-      doc.addImage(roundedHeroBase64, 'JPEG', marginL, curY, heroImageW, heroImageH, 'hero_img', 'MEDIUM');
-      imageLoadedSuccess = true;
-    }
-  } catch (err) {
-    console.warn('CORS or connection failure when loading Hero image:', err);
-  }
-
-  if (!imageLoadedSuccess) {
-    drawBespokeArchitecturalDrawing(doc, marginL, curY, heroImageW, heroImageH, product.category, langText);
-  }
-
-  // Right Side Specs Grid (2 cols x 3 rows = 6 items)
-  let specPerformance = 'Class-A Architectural Grade';
-  if (product.id === 'pr1') specPerformance = '38dB Sound Isolation (ASTM E90)';
-  else if (product.id === 'pr2') specPerformance = 'UL 10C Fire Rated (60/90/120 Min)';
-  else if (product.id === 'pr3') specPerformance = 'Hydraulic Pivot Bearing System';
-  else if (product.id === 'pr4') specPerformance = 'Integrated Wire Cable Management';
-  else if (product.id === 'pr5') specPerformance = 'Grade 50 Low-Alloy Structural Steel';
-  else if (product.id === 'pr6') specPerformance = 'Solar Performance SHGC 0.22, EPDM Seals';
-
-  const finishVal = product.finishes && product.finishes.length > 0 
-    ? product.finishes.join(', ') 
-    : 'Bespoke Polyurethane Coat';
-
-  const specsGrid = [
-    { label: langText.material, value: sanitizePdfText(product.material, 'Premium Solid Walnut / Timber'), drawIcon: drawMaterialIcon },
-    { label: langText.construction, value: sanitizePdfText(product.specification, 'Architectural Core Joinery'), drawIcon: drawConstructionIcon },
-    { label: langText.acoustic, value: specPerformance, drawIcon: drawAcousticIcon },
-    { label: langText.fireRating, value: product.id === 'pr2' ? '60 / 90 / 120 Minutes' : 'Standard Architectural Grade', drawIcon: drawFireIcon },
-    { label: langText.dimensions, value: sanitizePdfText(product.dimensions || product.size, '900 x 2200 x 45 mm'), drawIcon: drawDimensionsIcon },
-    { label: langText.finish, value: sanitizePdfText(finishVal, 'Bespoke Polyurethane Coat'), drawIcon: drawFinishIcon }
-  ];
-
-  const cardW = (rightPanelW - 4) / 2; // 39mm
-  const cardH = 19;
-  const gapX = 4;
-  const gapY = 2.5;
-
-  specsGrid.forEach((card, index) => {
-    const colIdx = index % 2;
-    const rowIdx = Math.floor(index / 2);
-    const cardX = rightPanelX + colIdx * (cardW + gapX);
-    const cardY = curY + rowIdx * (cardH + gapY);
-
-    doc.setFillColor(COLOR_LIGHT_GRAY);
-    doc.rect(cardX, cardY, cardW, cardH, 'F');
-
+    curY += 15;
     doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(marginL, curY, pageW - marginR, curY);
+
+    // Main Blueprint / Drawing Canvas Box
+    curY += 3;
+    const canvasW = contentW; // 273mm
+    const canvasH = 155; // Fits 210mm page height with header & footer
+
+    // Background & Outer Frame
+    doc.setFillColor('#FAFBFB');
+    doc.rect(marginL, curY, canvasW, canvasH, 'F');
+    doc.setDrawColor(COLOR_BORDER_GRAY);
     doc.setLineWidth(0.3);
-    doc.line(cardX, cardY, cardX + 3, cardY);
-    doc.line(cardX, cardY, cardX, cardY + 3);
+    doc.rect(marginL, curY, canvasW, canvasH, 'S');
 
-    card.drawIcon(doc, cardX + 3, cardY + 5);
+    // Drawing Viewport (Top Portion of Canvas: 126mm H)
+    const viewportH = 126;
+    const viewY = curY + 2;
 
+    // Corner drafting crosshairs (+) inside viewport
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.2);
+    // Top-Left Crosshair
+    doc.line(marginL + 3, viewY + 5, marginL + 9, viewY + 5);
+    doc.line(marginL + 6, viewY + 2, marginL + 6, viewY + 8);
+    // Top-Right Crosshair
+    doc.line(marginL + canvasW - 9, viewY + 5, marginL + canvasW - 3, viewY + 5);
+    doc.line(marginL + canvasW - 6, viewY + 2, marginL + canvasW - 6, viewY + 8);
+    // Bottom-Left Crosshair
+    doc.line(marginL + 3, viewY + viewportH - 5, marginL + 9, viewY + viewportH - 5);
+    doc.line(marginL + 6, viewY + viewportH - 8, marginL + 6, viewY + viewportH - 2);
+    // Bottom-Right Crosshair
+    doc.line(marginL + canvasW - 9, viewY + viewportH - 5, marginL + canvasW - 3, viewY + viewportH - 5);
+    doc.line(marginL + canvasW - 6, viewY + viewportH - 8, marginL + canvasW - 6, viewY + viewportH - 2);
+
+    // Render Spec Drawing scaled inside viewport
+    const maxW = canvasW - 12;
+    const maxH = viewportH - 10;
+    let drawW = maxW;
+    let drawH = drawW / specImgData.aspect;
+    if (drawH > maxH) {
+      drawH = maxH;
+      drawW = drawH * specImgData.aspect;
+    }
+    const drawX = marginL + (canvasW - drawW) / 2;
+    const drawY = viewY + (viewportH - drawH) / 2;
+
+    try {
+      doc.addImage(specImgData.base64, 'JPEG', drawX, drawY, drawW, drawH, 'spec_full_p1', 'MEDIUM');
+    } catch (e) {
+      console.warn('Failed rendering specImgData on Page 1:', e);
+    }
+
+    // -----------------------------------------------------------------------
+    // ARCHITECTURAL TITLE BLOCK (Bottom 27mm of Canvas)
+    // -----------------------------------------------------------------------
+    const titleBlockY = curY + viewportH;
+    const titleBlockH = canvasH - viewportH; // 29mm
+
+    // Divider Line above Title Block
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(marginL, titleBlockY, marginL + canvasW, titleBlockY);
+
+    // Title Block Background
+    doc.setFillColor('#FFFFFF');
+    doc.rect(marginL, titleBlockY, canvasW, titleBlockH, 'F');
+    doc.setDrawColor(COLOR_BORDER_GRAY);
+    doc.setLineWidth(0.3);
+    doc.rect(marginL, titleBlockY, canvasW, titleBlockH, 'S');
+
+    // Title Block Vertical Column Dividers
+    const c1W = 68;
+    const c2W = 82;
+    const c3W = 60;
+    const c4W = canvasW - c1W - c2W - c3W; // 63mm
+
+    const c1X = marginL;
+    const c2X = c1X + c1W;
+    const c3X = c2X + c2W;
+    const c4X = c3X + c3W;
+
+    doc.setDrawColor('#CBD5E1');
+    doc.setLineWidth(0.2);
+    doc.line(c2X, titleBlockY, c2X, titleBlockY + titleBlockH);
+    doc.line(c3X, titleBlockY, c3X, titleBlockY + titleBlockH);
+    doc.line(c4X, titleBlockY, c4X, titleBlockY + titleBlockH);
+
+    // Cell 1: Company & Engineering Division
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('SDY ARCHITECTURAL SYSTEMS', c1X + 4, titleBlockY + 6);
+
+    doc.setTextColor(COLOR_GOLD);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.text('ENGINEERING & DESIGN DIVISION', c1X + 4, titleBlockY + 11);
+
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(5.5);
+    doc.text('CAD / SPECIFICATION DRAWING SHEET', c1X + 4, titleBlockY + 16);
+    doc.text('ISO 9001:2026 QUALITY ASSURED', c1X + 4, titleBlockY + 21);
+
+    // Cell 2: Project & Product Details
     doc.setTextColor(COLOR_TEXT_MUTED);
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(5.5);
-    doc.text(card.label.toUpperCase(), cardX + 11, cardY + 6);
+    doc.text('DRAWING TITLE:', c2X + 4, titleBlockY + 5.5);
+
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(7.5);
+    const titleText = doc.splitTextToSize(productName.toUpperCase(), c2W - 8);
+    doc.text(titleText.slice(0, 2), c2X + 4, titleBlockY + 10);
+
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(5.5);
+    doc.text(`DRAWING NO: DWG-SDY-${product.id.toUpperCase()}-01`, c2X + 4, titleBlockY + 18);
+    doc.text(`SYSTEM: ${collectionSubtitle}`, c2X + 4, titleBlockY + 22.5);
+
+    // Cell 3: Scale & Technical Parameters
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(5.5);
+    doc.text('SCALE / METRICS:', c3X + 4, titleBlockY + 5.5);
 
     doc.setTextColor(COLOR_DARK_NAVY);
     doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(6.5);
-    const wrappedValue = doc.splitTextToSize(card.value, cardW - 13);
-    doc.text(wrappedValue.slice(0, 2), cardX + 11, cardY + 10.5);
-  });
+    doc.setFontSize(6);
+    doc.text('SCALE: 1:20 @ A4 LANDSCAPE', c3X + 4, titleBlockY + 10);
+    const dimVal = sanitizePdfText(product.dimensions || product.size, '900 x 2200 x 45 MM');
+    doc.text(`DIMENSIONS: ${dimVal}`, c3X + 4, titleBlockY + 14.5);
+    const matVal = sanitizePdfText(product.material, 'ARCHITECTURAL GRADE');
+    doc.text(`MATERIAL: ${matVal}`, c3X + 4, titleBlockY + 19);
+    doc.text('UNITS: MILLIMETERS (MM)', c3X + 4, titleBlockY + 23.5);
 
-  // 4. DESCRIPTION & DESIGN PHILOSOPHY
-  curY += heroImageH + 10;
-  doc.setTextColor(COLOR_DARK_NAVY);
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text(langText.designDialogue, marginL, curY);
+    // Cell 4: Approval & ISO Stamp Badge
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(5.5);
+    doc.text('STATUS & APPROVAL:', c4X + 4, titleBlockY + 5.5);
 
-  doc.setDrawColor(COLOR_GOLD);
-  doc.setLineWidth(0.4);
-  doc.line(marginL, curY + 1.8, marginL + 12, curY + 1.8);
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.text('STATUS: ISSUED FOR CONSTRUCTION', c4X + 4, titleBlockY + 10);
 
-  curY += 7;
-  doc.setTextColor(COLOR_TEXT_CHARCOAL);
-  doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(8.5);
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(5.5);
+    doc.text('REVISION: REV-A02 (FINAL)', c4X + 4, titleBlockY + 14.5);
 
-  const splitDesc = doc.splitTextToSize(productDesc, contentW);
-  splitDesc.slice(0, 5).forEach((line: string) => {
-    doc.text(line, marginL, curY);
-    curY += 4.5;
-  });
+    // Stamp Badge
+    doc.setFillColor('#FAFBFB');
+    doc.rect(c4X + 4, titleBlockY + 17, c4W - 8, 8, 'F');
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.3);
+    doc.rect(c4X + 4, titleBlockY + 17, c4W - 8, 8, 'S');
 
-  // 5. ARCHITECTURAL SCHEMATIC ILLUSTRATION DRAWING CARD
-  curY += 6;
-  const drawingH = 62;
-  drawBespokeArchitecturalDrawing(doc, marginL, curY, contentW, drawingH, product.category, langText);
+    doc.setTextColor(COLOR_GOLD);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.text('SDY CERTIFIED DRAWING', c4X + (c4W / 2), titleBlockY + 22.2, { align: 'center' });
 
-  // 6. FOOTER BRANDING & DEEP LINK QR CODE
-  let footerY = pageH - marginB - 18; // 297 - 15 - 18 = 264mm
+    // Footer
+    let footerY = pageH - marginB - 14;
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(marginL, footerY, pageW - marginR, footerY);
 
-  doc.setDrawColor(COLOR_GOLD);
-  doc.setLineWidth(0.4);
-  doc.line(marginL, footerY, pageW - marginR, footerY);
+    footerY += 2;
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.text(langText.footerAddress, marginL, footerY + 3);
+    doc.text(langText.footerContact, marginL, footerY + 6);
 
-  footerY += 3;
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.text(langText.copyright, marginL, footerY + 9);
 
-  try {
-    const footerLogoBase64 = await generateSdyLogo();
-    if (footerLogoBase64) {
-      doc.addImage(footerLogoBase64, 'PNG', marginL, footerY, 14, 12, 'logo_f_p1', 'FAST');
-    }
-  } catch (err) {
-    console.warn(err);
-  }
-
-  const footerContactX = marginL + 17;
-  doc.setTextColor(COLOR_TEXT_MUTED);
-  doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(6);
-  doc.text(langText.footerAddress, footerContactX, footerY + 3);
-  doc.text(langText.footerContact, footerContactX, footerY + 6.5);
-
-  doc.setTextColor(COLOR_DARK_NAVY);
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(6);
-  doc.text(langText.copyright, footerContactX, footerY + 10);
-
-  const deepLinkUrl = `${window.location.origin}${window.location.pathname}?view=products&id=${product.id}`;
-  const qrCodeSize = 14;
-  const qrCodeX = pageW - marginR - qrCodeSize;
-  const qrCodeY = footerY;
-
-  try {
-    const qrBase64 = await QRCode.toDataURL(deepLinkUrl, {
-      margin: 1,
-      width: 140,
-      color: {
-        dark: COLOR_DARK_NAVY,
-        light: '#FFFFFF'
+    // Deep-link QR code & page number
+    const deepLinkUrl = `${window.location.origin}${window.location.pathname}?view=products&id=${product.id}`;
+    const qrSize = 12;
+    const qrX = pageW - marginR - qrSize;
+    try {
+      const qrBase64 = await QRCode.toDataURL(deepLinkUrl, { margin: 1, width: 120, color: { dark: COLOR_DARK_NAVY, light: '#FFFFFF' } });
+      if (qrBase64) {
+        doc.addImage(qrBase64, 'PNG', qrX, footerY, qrSize, qrSize, 'qr_p1', 'FAST');
       }
+    } catch (e) { console.warn(e); }
+
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.text(`PAGE 1 OF ${totalPages}`, pageW - marginR - (qrSize + 4), footerY + 6, { align: 'right' });
+
+    // -----------------------------------------------------------------------
+    // PAGE 2: LANDSCAPE PRODUCT EXECUTIVE SPECIFICATION & DETAILS SHEET
+    // -----------------------------------------------------------------------
+    doc.addPage('a4', 'landscape');
+    let p2CurY = marginT;
+
+    // Header
+    try {
+      const logoData = await generateSdyLogoData();
+      if (logoData && logoData.base64) {
+        doc.addImage(logoData.base64, 'PNG', marginL, p2CurY, logoW, logoH, 'logo_p2', 'MEDIUM');
+      }
+    } catch (e) { console.warn(e); }
+
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text('SDY COMPANY C&I', textX, p2CurY + 4);
+
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.text('EXECUTIVE PRODUCT SPECIFICATIONS & TECHNICAL DATA', textX, p2CurY + 8.5);
+
+    doc.setTextColor(COLOR_GOLD);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text(`COLLECTION: ${product.category.toUpperCase()}`, pageW - marginR, p2CurY + 4, { align: 'right' });
+
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.text(`CODE: SDY-${product.id.toUpperCase()} | SPEC SHEET`, pageW - marginR, p2CurY + 8.5, { align: 'right' });
+
+    p2CurY += 15;
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(marginL, p2CurY, pageW - marginR, p2CurY);
+
+    // Left Column (Hero Image & Design Dialogue)
+    p2CurY += 4;
+    const colLeftW = 128;
+    const colRightX = marginL + colLeftW + 8; // 148mm
+    const colRightW = contentW - colLeftW - 8; // 137mm
+
+    const heroH = 85;
+    let heroSuccess = false;
+    try {
+      const roundedHero = await generateRoundedProductImage(product.image, 600, 400);
+      if (roundedHero) {
+        doc.addImage(roundedHero, 'JPEG', marginL, p2CurY, colLeftW, heroH, 'hero_p2', 'MEDIUM');
+        heroSuccess = true;
+      }
+    } catch (err) { console.warn(err); }
+
+    if (!heroSuccess) {
+      drawBespokeArchitecturalDrawing(doc, marginL, p2CurY, colLeftW, heroH, product.category, langText);
+    }
+
+    // Design Philosophy under Hero Image
+    let descY = p2CurY + heroH + 6;
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.text(langText.designDialogue, marginL, descY);
+
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(marginL, descY + 1.5, marginL + 12, descY + 1.5);
+
+    descY += 6;
+    doc.setTextColor(COLOR_TEXT_CHARCOAL);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(8);
+    const splitP2Desc = doc.splitTextToSize(productDesc, colLeftW);
+    splitP2Desc.slice(0, 8).forEach((line: string) => {
+      doc.text(line, marginL, descY);
+      descY += 4;
     });
 
-    if (qrBase64) {
-      doc.addImage(qrBase64, 'PNG', qrCodeX, qrCodeY, qrCodeSize, qrCodeSize, 'qr_p1', 'FAST');
+    // Right Column (Product Title, Specs Grid, Parameters Table)
+    let rightY = p2CurY;
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    const p2TitleSize = productName.length > 28 ? 13 : 15;
+    doc.setFontSize(p2TitleSize);
+    const splitP2Title = doc.splitTextToSize(productName.toUpperCase(), colRightW);
+    doc.text(splitP2Title, colRightX, rightY + 4);
 
-      doc.setTextColor(COLOR_GOLD);
+    rightY += (splitP2Title.length * 5) + 2;
+    doc.setTextColor(COLOR_GOLD);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.text(collectionSubtitle.toUpperCase(), colRightX, rightY);
+
+    // Specs Grid (6 Cards, 2 cols x 3 rows)
+    rightY += 5;
+    let specPerformance = 'Class-A Architectural Grade';
+    if (product.id === 'pr1') specPerformance = '38dB Sound Isolation (ASTM E90)';
+    else if (product.id === 'pr2') specPerformance = 'UL 10C Fire Rated (60/90/120 Min)';
+    else if (product.id === 'pr3') specPerformance = 'Hydraulic Pivot Bearing System';
+    else if (product.id === 'pr4') specPerformance = 'Integrated Wire Cable Management';
+    else if (product.id === 'pr5') specPerformance = 'Grade 50 Low-Alloy Structural Steel';
+    else if (product.id === 'pr6') specPerformance = 'Solar Performance SHGC 0.22, EPDM Seals';
+
+    const finishVal = product.finishes && product.finishes.length > 0 ? product.finishes.join(', ') : 'Bespoke Polyurethane Coat';
+
+    const specsGrid = [
+      { label: langText.material, value: sanitizePdfText(product.material, 'Solid Walnut / Timber'), drawIcon: drawMaterialIcon },
+      { label: langText.construction, value: sanitizePdfText(product.specification, 'Architectural Core Joinery'), drawIcon: drawConstructionIcon },
+      { label: langText.acoustic, value: specPerformance, drawIcon: drawAcousticIcon },
+      { label: langText.fireRating, value: product.id === 'pr2' ? '60 / 90 / 120 Minutes' : 'Standard Architectural Grade', drawIcon: drawFireIcon },
+      { label: langText.dimensions, value: sanitizePdfText(product.dimensions || product.size, '900 x 2200 x 45 mm'), drawIcon: drawDimensionsIcon },
+      { label: langText.finish, value: sanitizePdfText(finishVal, 'Bespoke Polyurethane Coat'), drawIcon: drawFinishIcon }
+    ];
+
+    const cW = (colRightW - 4) / 2; // 66.5mm
+    const cH = 18;
+    const cGapX = 4;
+    const cGapY = 2.5;
+
+    specsGrid.forEach((card, index) => {
+      const colIdx = index % 2;
+      const rowIdx = Math.floor(index / 2);
+      const cX = colRightX + colIdx * (cW + cGapX);
+      const cY = rightY + rowIdx * (cH + cGapY);
+
+      doc.setFillColor(COLOR_LIGHT_GRAY);
+      doc.rect(cX, cY, cW, cH, 'F');
+
+      doc.setDrawColor(COLOR_GOLD);
+      doc.setLineWidth(0.3);
+      doc.line(cX, cY, cX + 3, cY);
+      doc.line(cX, cY, cX, cY + 3);
+
+      card.drawIcon(doc, cX + 3, cY + 4.5);
+
+      doc.setTextColor(COLOR_TEXT_MUTED);
       doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(4.5);
-      doc.text(langText.scanToExplore, qrCodeX + 7, qrCodeY + 16, { align: 'center' });
-    }
-  } catch (err) {
-    console.warn('Failed to load deep-link QR Code in browser:', err);
-  }
+      doc.setFontSize(5.5);
+      doc.text(card.label.toUpperCase(), cX + 11, cY + 5.5);
 
-  doc.setTextColor(COLOR_TEXT_MUTED);
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(6);
-  doc.text('PAGE 1 OF 1', pageW - marginR, pageH - 6, { align: 'right' });
+      doc.setTextColor(COLOR_DARK_NAVY);
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(6.5);
+      const wrappedVal = doc.splitTextToSize(card.value, cW - 13);
+      doc.text(wrappedVal.slice(0, 2), cX + 11, cY + 10);
+    });
+
+    // Technical Parameters Box
+    rightY += (3 * (cH + cGapY)) + 4;
+    const paramBoxH = 68;
+    doc.setFillColor('#FAFBFB');
+    doc.rect(colRightX, rightY, colRightW, paramBoxH, 'F');
+    doc.setDrawColor(COLOR_BORDER_GRAY);
+    doc.setLineWidth(0.2);
+    doc.rect(colRightX, rightY, colRightW, paramBoxH, 'S');
+
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('TECHNICAL COMPLIANCE & PARAMETERS', colRightX + 4, rightY + 6);
+
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.3);
+    doc.line(colRightX + 4, rightY + 8, colRightX + 28, rightY + 8);
+
+    const paramRows = [
+      { k: 'Structural Load Standard', v: 'ASTM E330 / BS 6399 Heavy Industrial Grade' },
+      { k: 'Thermal Performance', v: 'U-Factor 0.28 BTU/h·ft²·°F (ISO 10077)' },
+      { k: 'Surface Hardness', v: 'Shore D 82 Impact Resistant Polyurethane' },
+      { k: 'Environmental Standard', v: 'LEED v4.1 Certified / Zero VOC Emissions' },
+      { k: 'Quality Compliance', v: 'ISO 9001:2026 Factory Quality Assured' }
+    ];
+
+    let rowY = rightY + 14;
+    paramRows.forEach((r) => {
+      doc.setTextColor(COLOR_TEXT_MUTED);
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(6.5);
+      doc.text(r.k, colRightX + 4, rowY);
+
+      doc.setTextColor(COLOR_DARK_NAVY);
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.text(r.v, colRightX + 52, rowY);
+
+      doc.setDrawColor('#E2E8F0');
+      doc.setLineWidth(0.15);
+      doc.line(colRightX + 4, rowY + 2, colRightX + colRightW - 4, rowY + 2);
+
+      rowY += 10;
+    });
+
+    // Footer Page 2
+    let p2FooterY = pageH - marginB - 14;
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(marginL, p2FooterY, pageW - marginR, p2FooterY);
+
+    p2FooterY += 2;
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.text(langText.footerAddress, marginL, p2FooterY + 3);
+    doc.text(langText.footerContact, marginL, p2FooterY + 6);
+
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.text(langText.copyright, marginL, p2FooterY + 9);
+
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.text('PAGE 2 OF 2', pageW - marginR, p2FooterY + 6, { align: 'right' });
+
+  } else {
+    // -----------------------------------------------------------------------
+    // PAGE 1 (NO SPEC SHEET UPLOADED): SINGLE EXECUTIVE LANDSCAPE SPEC SHEET
+    // Uses the exact same elegant 2-column layout as Page 2
+    // -----------------------------------------------------------------------
+    let curY = marginT;
+
+    // Header
+    let logoH = 15;
+    let logoW = 18;
+    let textX = marginL + 22;
+
+    try {
+      const logoData = await generateSdyLogoData();
+      if (logoData && logoData.base64) {
+        doc.addImage(logoData.base64, 'PNG', marginL, curY, logoW, logoH, 'logo_p1_solo', 'MEDIUM');
+      }
+    } catch (e) { console.warn(e); }
+
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text('SDY COMPANY C&I', textX, curY + 4);
+
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.text('EXECUTIVE PRODUCT SPECIFICATIONS & TECHNICAL DATA', textX, curY + 8.5);
+
+    doc.setTextColor(COLOR_GOLD);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text(`COLLECTION: ${product.category.toUpperCase()}`, pageW - marginR, curY + 4, { align: 'right' });
+
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.text(`CODE: SDY-${product.id.toUpperCase()} | SPEC SHEET`, pageW - marginR, curY + 8.5, { align: 'right' });
+
+    curY += 15;
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(marginL, curY, pageW - marginR, curY);
+
+    // Left Column (Hero Image & Design Dialogue)
+    curY += 4;
+    const colLeftW = 128;
+    const colRightX = marginL + colLeftW + 8; // 148mm
+    const colRightW = contentW - colLeftW - 8; // 137mm
+
+    const heroH = 85;
+    let heroSuccess = false;
+    try {
+      const roundedHero = await generateRoundedProductImage(product.image, 600, 400);
+      if (roundedHero) {
+        doc.addImage(roundedHero, 'JPEG', marginL, curY, colLeftW, heroH, 'hero_p1_solo', 'MEDIUM');
+        heroSuccess = true;
+      }
+    } catch (err) { console.warn(err); }
+
+    if (!heroSuccess) {
+      drawBespokeArchitecturalDrawing(doc, marginL, curY, colLeftW, heroH, product.category, langText);
+    }
+
+    // Design Philosophy under Hero Image
+    let descY = curY + heroH + 6;
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.text(langText.designDialogue, marginL, descY);
+
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(marginL, descY + 1.5, marginL + 12, descY + 1.5);
+
+    descY += 6;
+    doc.setTextColor(COLOR_TEXT_CHARCOAL);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(8);
+    const splitDesc = doc.splitTextToSize(productDesc, colLeftW);
+    splitDesc.slice(0, 8).forEach((line: string) => {
+      doc.text(line, marginL, descY);
+      descY += 4;
+    });
+
+    // Right Column (Product Title, Specs Grid, Parameters Table)
+    let rightY = curY;
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    const titleSize = productName.length > 28 ? 13 : 15;
+    doc.setFontSize(titleSize);
+    const splitTitle = doc.splitTextToSize(productName.toUpperCase(), colRightW);
+    doc.text(splitTitle, colRightX, rightY + 4);
+
+    rightY += (splitTitle.length * 5) + 2;
+    doc.setTextColor(COLOR_GOLD);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.text(collectionSubtitle.toUpperCase(), colRightX, rightY);
+
+    // Specs Grid (6 Cards, 2 cols x 3 rows)
+    rightY += 5;
+    let specPerformance = 'Class-A Architectural Grade';
+    if (product.id === 'pr1') specPerformance = '38dB Sound Isolation (ASTM E90)';
+    else if (product.id === 'pr2') specPerformance = 'UL 10C Fire Rated (60/90/120 Min)';
+    else if (product.id === 'pr3') specPerformance = 'Hydraulic Pivot Bearing System';
+    else if (product.id === 'pr4') specPerformance = 'Integrated Wire Cable Management';
+    else if (product.id === 'pr5') specPerformance = 'Grade 50 Low-Alloy Structural Steel';
+    else if (product.id === 'pr6') specPerformance = 'Solar Performance SHGC 0.22, EPDM Seals';
+
+    const finishVal = product.finishes && product.finishes.length > 0 ? product.finishes.join(', ') : 'Bespoke Polyurethane Coat';
+
+    const specsGrid = [
+      { label: langText.material, value: sanitizePdfText(product.material, 'Solid Walnut / Timber'), drawIcon: drawMaterialIcon },
+      { label: langText.construction, value: sanitizePdfText(product.specification, 'Architectural Core Joinery'), drawIcon: drawConstructionIcon },
+      { label: langText.acoustic, value: specPerformance, drawIcon: drawAcousticIcon },
+      { label: langText.fireRating, value: product.id === 'pr2' ? '60 / 90 / 120 Minutes' : 'Standard Architectural Grade', drawIcon: drawFireIcon },
+      { label: langText.dimensions, value: sanitizePdfText(product.dimensions || product.size, '900 x 2200 x 45 mm'), drawIcon: drawDimensionsIcon },
+      { label: langText.finish, value: sanitizePdfText(finishVal, 'Bespoke Polyurethane Coat'), drawIcon: drawFinishIcon }
+    ];
+
+    const cW = (colRightW - 4) / 2; // 66.5mm
+    const cH = 18;
+    const cGapX = 4;
+    const cGapY = 2.5;
+
+    specsGrid.forEach((card, index) => {
+      const colIdx = index % 2;
+      const rowIdx = Math.floor(index / 2);
+      const cX = colRightX + colIdx * (cW + cGapX);
+      const cY = rightY + rowIdx * (cH + cGapY);
+
+      doc.setFillColor(COLOR_LIGHT_GRAY);
+      doc.rect(cX, cY, cW, cH, 'F');
+
+      doc.setDrawColor(COLOR_GOLD);
+      doc.setLineWidth(0.3);
+      doc.line(cX, cY, cX + 3, cY);
+      doc.line(cX, cY, cX, cY + 3);
+
+      card.drawIcon(doc, cX + 3, cY + 4.5);
+
+      doc.setTextColor(COLOR_TEXT_MUTED);
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(5.5);
+      doc.text(card.label.toUpperCase(), cX + 11, cY + 5.5);
+
+      doc.setTextColor(COLOR_DARK_NAVY);
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(6.5);
+      const wrappedVal = doc.splitTextToSize(card.value, cW - 13);
+      doc.text(wrappedVal.slice(0, 2), cX + 11, cY + 10);
+    });
+
+    // Technical Parameters Box
+    rightY += (3 * (cH + cGapY)) + 4;
+    const paramBoxH = 68;
+    doc.setFillColor('#FAFBFB');
+    doc.rect(colRightX, rightY, colRightW, paramBoxH, 'F');
+    doc.setDrawColor(COLOR_BORDER_GRAY);
+    doc.setLineWidth(0.2);
+    doc.rect(colRightX, rightY, colRightW, paramBoxH, 'S');
+
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('TECHNICAL COMPLIANCE & PARAMETERS', colRightX + 4, rightY + 6);
+
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.3);
+    doc.line(colRightX + 4, rightY + 8, colRightX + 28, rightY + 8);
+
+    const paramRows = [
+      { k: 'Structural Load Standard', v: 'ASTM E330 / BS 6399 Heavy Industrial Grade' },
+      { k: 'Thermal Performance', v: 'U-Factor 0.28 BTU/h·ft²·°F (ISO 10077)' },
+      { k: 'Surface Hardness', v: 'Shore D 82 Impact Resistant Polyurethane' },
+      { k: 'Environmental Standard', v: 'LEED v4.1 Certified / Zero VOC Emissions' },
+      { k: 'Quality Compliance', v: 'ISO 9001:2026 Factory Quality Assured' }
+    ];
+
+    let rowY = rightY + 14;
+    paramRows.forEach((r) => {
+      doc.setTextColor(COLOR_TEXT_MUTED);
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(6.5);
+      doc.text(r.k, colRightX + 4, rowY);
+
+      doc.setTextColor(COLOR_DARK_NAVY);
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.text(r.v, colRightX + 52, rowY);
+
+      doc.setDrawColor('#E2E8F0');
+      doc.setLineWidth(0.15);
+      doc.line(colRightX + 4, rowY + 2, colRightX + colRightW - 4, rowY + 2);
+
+      rowY += 10;
+    });
+
+    // Footer
+    let footerY = pageH - marginB - 14;
+    doc.setDrawColor(COLOR_GOLD);
+    doc.setLineWidth(0.4);
+    doc.line(marginL, footerY, pageW - marginR, footerY);
+
+    footerY += 2;
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.text(langText.footerAddress, marginL, footerY + 3);
+    doc.text(langText.footerContact, marginL, footerY + 6);
+
+    doc.setTextColor(COLOR_DARK_NAVY);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.text(langText.copyright, marginL, footerY + 9);
+
+    const deepLinkUrl = `${window.location.origin}${window.location.pathname}?view=products&id=${product.id}`;
+    const qrSize = 12;
+    const qrX = pageW - marginR - qrSize;
+    try {
+      const qrBase64 = await QRCode.toDataURL(deepLinkUrl, { margin: 1, width: 120, color: { dark: COLOR_DARK_NAVY, light: '#FFFFFF' } });
+      if (qrBase64) {
+        doc.addImage(qrBase64, 'PNG', qrX, footerY, qrSize, qrSize, 'qr_p1_solo', 'FAST');
+      }
+    } catch (e) { console.warn(e); }
+
+    doc.setTextColor(COLOR_TEXT_MUTED);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.text('PAGE 1 OF 1', pageW - marginR - (qrSize + 4), footerY + 6, { align: 'right' });
+  }
 
   if (download) {
     const brochureFilename = `SDY_Product_Spec_${product.name.replace(/ /g, '_')}.pdf`;
     doc.save(brochureFilename);
   }
+
   return doc;
 }

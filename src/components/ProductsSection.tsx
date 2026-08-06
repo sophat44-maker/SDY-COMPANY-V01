@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Product, formatDriveUrl } from '../types';
 import { useLanguage } from './LanguageContext';
+import { transformGoogleDriveUrl, extractGoogleDriveFileId, getGoogleDriveViewUrl, getGoogleDriveDownloadUrl } from '../utils/googleDrive';
 import { generateProductPdf } from '../utils/pdfGenerator';
 import ConcreteOrderModal from './ConcreteOrderModal';
 import ProductDetailModal, { getProductImages } from './ProductDetailModal';
@@ -158,13 +159,56 @@ export default function ProductsSection({ searchQuery: headerSearchQuery, onSear
     setIsDownloadSuccessful(true);
     
     try {
-      await generateProductPdf(selectedProduct, language);
+      const directPdf = selectedProduct.pdf_spec_url || selectedProduct.pdfUrl;
+      if (directPdf && directPdf !== '#' && directPdf.trim()) {
+        const rawUrl = directPdf.trim();
+
+        if (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:')) {
+          const link = document.createElement('a');
+          link.href = rawUrl;
+          link.download = `SDY_${(selectedProduct.name || 'Product').replace(/\s+/g, '_')}_Catalog.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          return;
+        }
+
+        const isDirectPdfFile = rawUrl.toLowerCase().endsWith('.pdf') && !rawUrl.includes('drive.google.com') && !rawUrl.includes('googleusercontent.com');
+        if (isDirectPdfFile) {
+          try {
+            const res = await fetch(rawUrl);
+            if (res.ok) {
+              const contentType = res.headers.get('content-type') || '';
+              if (contentType.includes('application/pdf') || !contentType.includes('text/html')) {
+                const blob = await res.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = `SDY_${(selectedProduct.name || 'Product').replace(/\s+/g, '_')}_Catalog.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+                return;
+              }
+            }
+          } catch (e) {
+            console.warn('Fetch raw PDF failed:', e);
+          }
+        }
+
+        const viewUrl = getGoogleDriveViewUrl(rawUrl) || transformGoogleDriveUrl(rawUrl) || rawUrl;
+        window.open(viewUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      
+      await generateProductPdf(selectedProduct, language, true);
     } catch (err) {
       console.error('Failed to generate product specification PDF:', err);
     } finally {
       setTimeout(() => {
         setIsDownloadSuccessful(false);
-      }, 5000);
+      }, 3000);
     }
   };
 
@@ -393,7 +437,7 @@ export default function ProductsSection({ searchQuery: headerSearchQuery, onSear
                 {/* Product Image */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800">
                   <img
-                    src={getProductImages(product)[0]}
+                    src={getProductImages(product)[0] || DEFAULT_PRODUCT_FALLBACK}
                     alt={product.name}
                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                     referrerPolicy="no-referrer"
@@ -474,6 +518,7 @@ export default function ProductsSection({ searchQuery: headerSearchQuery, onSear
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onOrderClick={(title) => {
+          setSelectedProduct(null);
           setConcreteOrderProductTitle(title);
           setIsConcreteOrderModalOpen(true);
         }}

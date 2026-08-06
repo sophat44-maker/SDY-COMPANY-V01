@@ -44,7 +44,7 @@ export default function BlogSection() {
                 {/* Blog Image */}
                 <div className="relative aspect-[16/10] overflow-hidden bg-black/10">
                   <img
-                    src={post.image}
+                    src={post.image || "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800"}
                     alt={post.title}
                     className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-500"
                     referrerPolicy="no-referrer"
@@ -117,7 +117,7 @@ export default function BlogSection() {
               {/* Blog Top cover */}
               <div className="relative h-56 sm:h-72 w-full bg-black">
                 <img
-                  src={activePost.image}
+                  src={activePost.image || "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800"}
                   alt={activePost.title}
                   className="w-full h-full object-cover filter brightness-65"
                   referrerPolicy="no-referrer"

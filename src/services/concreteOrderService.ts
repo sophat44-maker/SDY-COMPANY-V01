@@ -1,4 +1,4 @@
-import api from './api';
+import api, { getGoogleSheetsWebhookUrl } from './api';
 
 export interface ProductOrder {
   id: string;
@@ -110,36 +110,59 @@ export async function submitProductOrder(orderData: Omit<ProductOrder, 'id' | 'c
   let telegramSent = false;
   let sheetsSynced = false;
 
+  // 1. Save to local storage immediately for ADMIN panel
+  try {
+    const existingOrdersStr = localStorage.getItem('sdy_concrete_orders');
+    const existingOrders: ProductOrder[] = existingOrdersStr ? JSON.parse(existingOrdersStr) : [];
+    const updatedOrders = [order, ...existingOrders];
+    localStorage.setItem('sdy_concrete_orders', JSON.stringify(updatedOrders));
+  } catch (err) {
+    console.error('Failed to save order to localStorage:', err);
+  }
+
   window.dispatchEvent(new Event('sdy_concrete_order_submitted'));
 
   // 2. Submit to Google Sheets via Google Apps Script Webhook
   try {
-    const adminConfigJson = localStorage.getItem('sdy_admin_config');
-    if (adminConfigJson) {
-      const config = JSON.parse(adminConfigJson);
-      if (config.isSyncEnabled && config.googleSheetsWebhookUrl) {
-        const response = await fetch(config.googleSheetsWebhookUrl, {
+    const webhookUrl = getGoogleSheetsWebhookUrl();
+    if (webhookUrl) {
+      const payload = JSON.stringify({
+        action: 'saveRecord',
+        sheetName: 'DoorAndFurnitureOrders',
+        idKey: 'id',
+        record: order,
+      });
+
+      try {
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: payload,
+        });
+        if (response.ok || response.status === 200) {
+          sheetsSynced = true;
+          console.log('Order posted to Google Sheets webhook successfully');
+        }
+      } catch (fetchErr) {
+        // Fallback no-cors dispatch
+        console.warn('Standard fetch failed, sending order via no-cors webhook fallback:', fetchErr);
+        await fetch(webhookUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'saveProductOrder',
-            sheetName: 'DoorAndFurnitureOrders',
-            record: order,
-          }),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: payload,
         });
         sheetsSynced = true;
-        console.log('Order posted to Google Sheets webhook:', response);
+      }
+    } else {
+      // Fallback using universal API service
+      const apiRes = await api.saveRecord('DoorAndFurnitureOrders', 'id', order);
+      if (apiRes.success) {
+        sheetsSynced = true;
       }
     }
-
-    // Fallback using universal API service
-    const apiRes = await api.saveRecord('DoorAndFurnitureOrders', 'id', order);
-    if (apiRes.success) {
-      sheetsSynced = true;
-    }
   } catch (err) {
-    console.warn('Google Sheets sync warning (offline or no-cors):', err);
+    console.warn('Google Sheets sync warning:', err);
   }
 
   // 3. Send to Telegram Bot Chat API if Bot Token and Chat ID are configured
@@ -165,6 +188,22 @@ export async function submitProductOrder(orderData: Omit<ProductOrder, 'id' | 'c
       console.warn('Telegram Bot API dispatch error:', err);
     }
   }
+
+  // Update order with telegram & sheet statuses
+  order.telegramStatus = telegramSent ? 'OK' : 'Failed';
+  order.sheetStatus = sheetsSynced ? 'Synced' : 'Pending';
+
+  try {
+    const existingOrdersStr = localStorage.getItem('sdy_concrete_orders');
+    if (existingOrdersStr) {
+      const existingOrders: ProductOrder[] = JSON.parse(existingOrdersStr);
+      const updatedOrders = existingOrders.map((o) =>
+        o.id === order.id ? order : o
+      );
+      localStorage.setItem('sdy_concrete_orders', JSON.stringify(updatedOrders));
+      window.dispatchEvent(new Event('sdy_concrete_order_submitted'));
+    }
+  } catch (e) {}
 
   return {
     success: true,

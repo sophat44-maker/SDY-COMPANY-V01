@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Product, formatDriveUrl } from '../types';
 import { useLanguage } from './LanguageContext';
-import { transformGoogleDriveUrl } from '../utils/googleDrive';
+import { transformGoogleDriveUrl, extractGoogleDriveFileId, getGoogleDriveViewUrl, getGoogleDriveDownloadUrl } from '../utils/googleDrive';
 import { generateProductPdf } from '../utils/pdfGenerator';
 
 const DEFAULT_PRODUCT_FALLBACK = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80';
@@ -111,18 +111,65 @@ export default function ProductDetailModal({ product, onClose, onOrderClick }: P
 
   const handleDownloadPdf = async () => {
     const directPdf = product.pdf_spec_url || product.pdfUrl;
-    if (directPdf && directPdf !== '#') {
-      const formatted = transformGoogleDriveUrl(directPdf) || formatDriveUrl(directPdf) || directPdf;
-      window.open(formatted, '_blank');
+    if (directPdf && directPdf !== '#' && directPdf.trim()) {
+      const rawUrl = directPdf.trim();
+
+      // Case 1: Data URL or Blob URL
+      if (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:')) {
+        const link = document.createElement('a');
+        link.href = rawUrl;
+        link.download = `SDY_${(product.name || 'Product').replace(/\s+/g, '_')}_Specification.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setIsDownloadSuccessful(true);
+        setTimeout(() => setIsDownloadSuccessful(false), 4000);
+        return;
+      }
+
+      // Case 2: Direct PDF URL ending in .pdf
+      const isDirectPdfFile = rawUrl.toLowerCase().endsWith('.pdf') && !rawUrl.includes('drive.google.com') && !rawUrl.includes('googleusercontent.com');
+      if (isDirectPdfFile) {
+        try {
+          const res = await fetch(rawUrl);
+          if (res.ok) {
+            const contentType = res.headers.get('content-type') || '';
+            if (contentType.includes('application/pdf')) {
+              const blob = await res.blob();
+              const blobUrl = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = blobUrl;
+              link.download = `SDY_${(product.name || 'Product').replace(/\s+/g, '_')}_Specification.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+              setIsDownloadSuccessful(true);
+              setTimeout(() => setIsDownloadSuccessful(false), 4000);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Direct PDF fetch failed:', e);
+        }
+      }
+
+      // Case 3: Google Drive link or web link -> Open Google Drive PDF viewer directly
+      const viewUrl = getGoogleDriveViewUrl(rawUrl) || transformGoogleDriveUrl(rawUrl) || rawUrl;
+      window.open(viewUrl, '_blank', 'noopener,noreferrer');
+      setIsDownloadSuccessful(true);
+      setTimeout(() => setIsDownloadSuccessful(false), 4000);
       return;
     }
 
+    // Default: generate high-resolution architectural PDF specification if no uploaded PDF exists
     try {
-      generateProductPdf(product);
+      await generateProductPdf(product, language, true);
       setIsDownloadSuccessful(true);
       setTimeout(() => setIsDownloadSuccessful(false), 4000);
     } catch (err) {
       console.error('PDF Generation failed', err);
+      alert('Could not generate PDF document. Please try again.');
     }
   };
 
@@ -175,7 +222,7 @@ export default function ProductDetailModal({ product, onClose, onOrderClick }: P
             )}
             <div className="relative flex-1 flex items-center justify-center rounded-2xl overflow-hidden">
               <img
-                src={currentModalImage}
+                src={currentModalImage || DEFAULT_PRODUCT_FALLBACK}
                 alt={`${productName} View ${safeIndex + 1}`}
                 className="w-full h-full object-contain max-h-[420px] rounded-xl transition-all duration-300"
                 referrerPolicy="no-referrer"
@@ -224,7 +271,7 @@ export default function ProductDetailModal({ product, onClose, onOrderClick }: P
                         : 'border-transparent opacity-60 hover:opacity-100'
                     }`}
                   >
-                    <img src={img} alt="Thumb" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={img || DEFAULT_PRODUCT_FALLBACK} alt="Thumb" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </button>
                 ))}
               </div>

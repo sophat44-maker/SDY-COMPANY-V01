@@ -395,7 +395,7 @@ export default function App() {
                         >
                           <div className="relative aspect-[16/9] overflow-hidden bg-black/10">
                             <img
-                              src={transformGoogleDriveUrl(project.coverImage)}
+                              src={transformGoogleDriveUrl(project.coverImage) || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800"}
                               alt={project.title}
                               className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                               referrerPolicy="no-referrer"
@@ -614,7 +614,7 @@ export default function App() {
                         >
                           <div className="relative aspect-[16/10] overflow-hidden bg-black/10">
                             <img
-                              src={post.image}
+                              src={post.image || "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800"}
                               alt={post.title}
                               className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                               referrerPolicy="no-referrer"

@@ -110,7 +110,7 @@ export default function ProjectsSection() {
                     {/* Image Container */}
                     <div className="relative aspect-[3/2] w-full overflow-hidden">
                       <img
-                        src={project.coverImage}
+                        src={project.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80'}
                         alt={project.title}
                         className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
                         referrerPolicy="no-referrer"
